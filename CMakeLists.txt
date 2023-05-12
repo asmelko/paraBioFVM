@@ -5,6 +5,7 @@ project(paraBioFVM VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Fetch Googletest
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -14,13 +15,21 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+# Fetch noarr
+FetchContent_Declare(
+  noarr_structures
+  GIT_REPOSITORY https://github.com/ParaCoToUl/noarr-structures.git
+  GIT_TAG        HEAD
+)
+FetchContent_Populate(noarr_structures)
+
 # Target BioFVMCore
 file(GLOB_RECURSE src_files "src/*")
 list(FILTER src_files EXCLUDE REGEX ".*main\\..*")
 
 add_library(BioFVMCore ${src_files})
 
-target_include_directories(BioFVMCore PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include)
 
 # Target unit_BioFVM
 file(GLOB_RECURSE test_files "test/*")
