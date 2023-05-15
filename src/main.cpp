@@ -1,12 +1,12 @@
-#include "solver.h"
+#include "diffusion_solvers/host_solver.h"
 
-int main() { 
-    microenvironment<1> m;
+int main()
+{
+	microenvironment m;
 
-    diffusion_solver s;
+	diffusion_solver s;
 
-    s.solve(m);
+	s.solve(m);
 
-    s.initialize(m);
-
+	s.initialize(m);
 }
