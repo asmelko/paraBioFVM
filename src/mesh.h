@@ -10,5 +10,10 @@ struct cartesian_mesh
 	point_t<index_t, 3> bounding_box_maxs; // [x_max, y_max, z_max]
 
 	point_t<index_t, 3> voxel_shape; // [dx, dy, dz]
-	point_t<index_t, 3> voxel_dims;	 // [x_size, y_size, z_size]
+	point_t<index_t, 3> grid_shape;	 // [x_size, y_size, z_size]
+
+	cartesian_mesh(index_t dims, point_t<index_t, 3> bounding_box_mins, point_t<index_t, 3> bounding_box_maxs,
+				   point_t<index_t, 3> voxel_shape);
+
+	index_t voxel_count() const;
 };

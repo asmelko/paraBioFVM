@@ -1,0 +1,44 @@
+#pragma once
+
+#include <noarr/structures_extended.hpp>
+
+template <index_t dims>
+struct layout_traits
+{};
+
+template <>
+struct layout_traits<1>
+{
+	using density_layout_t = decltype(noarr::scalar<real_t>() ^ noarr::vector<'s'>() ^ noarr::vector<'x'>());
+
+	static auto construct_density_layout(index_t substrates_count, const point_t<index_t, 3>& grid_dims)
+	{
+		return density_layout_t() ^ noarr::set_length<'s'>(substrates_count) ^ noarr::set_length<'x'>(grid_dims[0]);
+	}
+};
+
+template <>
+struct layout_traits<2>
+{
+	using density_layout_t =
+		decltype(noarr::scalar<real_t>() ^ noarr::vector<'s'>() ^ noarr::vector<'x'>() ^ noarr::vector<'y'>());
+
+	static auto construct_density_layout(index_t substrates_count, const point_t<index_t, 3>& grid_dims)
+	{
+		return density_layout_t() ^ noarr::set_length<'s'>(substrates_count) ^ noarr::set_length<'x'>(grid_dims[0])
+			   ^ noarr::set_length<'y'>(grid_dims[1]);
+	}
+};
+
+template <>
+struct layout_traits<3>
+{
+	using density_layout_t = decltype(noarr::scalar<real_t>() ^ noarr::vector<'s'>() ^ noarr::vector<'x'>()
+									  ^ noarr::vector<'y'>() ^ noarr::vector<'z'>());
+
+	static auto construct_density_layout(index_t substrates_count, const point_t<index_t, 3>& grid_dims)
+	{
+		return density_layout_t() ^ noarr::set_length<'s'>(substrates_count) ^ noarr::set_length<'x'>(grid_dims[0])
+			   ^ noarr::set_length<'y'>(grid_dims[1]) ^ noarr::set_length<'z'>(grid_dims[2]);
+	}
+};

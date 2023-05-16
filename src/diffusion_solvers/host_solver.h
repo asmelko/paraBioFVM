@@ -21,6 +21,7 @@ e_i   == a_i*b_(i-1)'                                         1 <  i <= n
 Then, the forward substitution is as follows (n multiplication + n subtractions):
 d_i'  == d_i - e_i*d_(i-1)                                    1 <  i <= n
 The backpropagation (2n multiplication + n subtractions):
+d_n'' == d_n'/b_n'
 d_i'' == (d_i' - c_i*d_(i+1)'')*b_i'                          n >  i >= 1
 */
 

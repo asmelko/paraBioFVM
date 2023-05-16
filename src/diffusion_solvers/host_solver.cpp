@@ -1,5 +1,7 @@
 #include "host_solver.h"
 
+#include <iostream>
+
 #include <noarr/structures/interop/bag.hpp>
 #include <noarr/structures_extended.hpp>
 
@@ -8,11 +10,11 @@
 void diffusion_solver::initialize(microenvironment& m)
 {
 	if (m.mesh.dims >= 1)
-		precompute_values(bx_, cx_, ex_, m.mesh.voxel_shape[0], m.mesh.dims, m.mesh.voxel_dims[0], m);
+		precompute_values(bx_, cx_, ex_, m.mesh.voxel_shape[0], m.mesh.dims, m.mesh.grid_shape[0], m);
 	if (m.mesh.dims >= 2)
-		precompute_values(by_, cy_, ey_, m.mesh.voxel_shape[1], m.mesh.dims, m.mesh.voxel_dims[1], m);
+		precompute_values(by_, cy_, ey_, m.mesh.voxel_shape[1], m.mesh.dims, m.mesh.grid_shape[1], m);
 	if (m.mesh.dims >= 3)
-		precompute_values(bz_, cz_, ez_, m.mesh.voxel_shape[2], m.mesh.dims, m.mesh.voxel_dims[2], m);
+		precompute_values(bz_, cz_, ez_, m.mesh.voxel_shape[2], m.mesh.dims, m.mesh.grid_shape[2], m);
 }
 
 void diffusion_solver::solve(microenvironment& m)
@@ -97,7 +99,7 @@ void diffusion_solver::precompute_values(std::unique_ptr<real_t[]>& b, std::uniq
 
 template <char swipe_dim, typename density_layout_t>
 void solve_slice(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
-				 const real_t* __restrict__ e, density_layout_t dens_l)
+				 const real_t* __restrict__ e, const density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 	const index_t n = dens_l | noarr::get_length<swipe_dim>();
@@ -115,7 +117,14 @@ void solve_slice(real_t* __restrict__ densities, const real_t* __restrict__ b, c
 		}
 	}
 
-	for (index_t i = n - 2; i >= 0; i++)
+	for (index_t s = 0; s < substrates_count; s++)
+	{
+		(dens_l | noarr::get_at<swipe_dim, 's'>(densities, n - 1, s)) =
+			(dens_l | noarr::get_at<swipe_dim, 's'>(densities, n - 1, s))
+			* (diag_l | noarr::get_at<'x', 's'>(b, n - 1, s));
+	}
+
+	for (index_t i = n - 2; i >= 0; i--)
 	{
 		for (index_t s = 0; s < substrates_count; s++)
 		{
@@ -130,7 +139,7 @@ void solve_slice(real_t* __restrict__ densities, const real_t* __restrict__ b, c
 void diffusion_solver::solve_1d(microenvironment& m)
 {
 	auto dens_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'s'>(m.substrates_count)
-				  ^ noarr::sized_vector<'x'>(m.mesh.voxel_dims[0]);
+				  ^ noarr::sized_vector<'x'>(m.mesh.grid_shape[0]);
 
 	solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(), dens_l);
 }
@@ -138,27 +147,27 @@ void diffusion_solver::solve_1d(microenvironment& m)
 void diffusion_solver::solve_2d(microenvironment& m)
 {
 	auto dens_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'s'>(m.substrates_count)
-				  ^ noarr::sized_vector<'x'>(m.mesh.voxel_dims[0]) ^ noarr::sized_vector<'y'>(m.mesh.voxel_dims[1]);
+				  ^ noarr::sized_vector<'x'>(m.mesh.grid_shape[0]) ^ noarr::sized_vector<'y'>(m.mesh.grid_shape[1]);
 
 	// swipe x
-	for (index_t y = 0; y < m.mesh.voxel_dims[1]; y++)
+	for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
 		solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(), dens_l ^ noarr::fix<'y'>(y));
 
 	// swipe y
-	for (index_t x = 0; x < m.mesh.voxel_dims[0]; x++)
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
 		solve_slice<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(), dens_l ^ noarr::fix<'x'>(x));
 }
 
 void diffusion_solver::solve_3d(microenvironment& m)
 {
 	auto dens_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'s'>(m.substrates_count)
-				  ^ noarr::sized_vector<'x'>(m.mesh.voxel_dims[0]) ^ noarr::sized_vector<'y'>(m.mesh.voxel_dims[1])
-				  ^ noarr::sized_vector<'z'>(m.mesh.voxel_dims[2]);
+				  ^ noarr::sized_vector<'x'>(m.mesh.grid_shape[0]) ^ noarr::sized_vector<'y'>(m.mesh.grid_shape[1])
+				  ^ noarr::sized_vector<'z'>(m.mesh.grid_shape[2]);
 
 	// swipe x
-	for (index_t y = 0; y < m.mesh.voxel_dims[1]; y++)
+	for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
 	{
-		for (index_t z = 0; z < m.mesh.voxel_dims[2]; z++)
+		for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
 		{
 			solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(),
 							 dens_l ^ noarr::fix<'y'>(y) ^ noarr::fix<'z'>(z));
@@ -166,9 +175,9 @@ void diffusion_solver::solve_3d(microenvironment& m)
 	}
 
 	// swipe y
-	for (index_t x = 0; x < m.mesh.voxel_dims[0]; x++)
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
 	{
-		for (index_t z = 0; z < m.mesh.voxel_dims[2]; z++)
+		for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
 		{
 			solve_slice<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(),
 							 dens_l ^ noarr::fix<'x'>(x) ^ noarr::fix<'z'>(z));
@@ -176,9 +185,9 @@ void diffusion_solver::solve_3d(microenvironment& m)
 	}
 
 	// swipe z
-	for (index_t x = 0; x < m.mesh.voxel_dims[0]; x++)
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
 	{
-		for (index_t y = 0; y < m.mesh.voxel_dims[1]; y++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
 		{
 			solve_slice<'z'>(m.substrate_densities.get(), bz_.get(), cz_.get(), ez_.get(),
 							 dens_l ^ noarr::fix<'x'>(x) ^ noarr::fix<'y'>(y));
