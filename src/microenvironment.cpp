@@ -23,13 +23,15 @@ microenvironment::microenvironment(cartesian_mesh mesh, index_t substrates_count
 	: mesh(mesh),
 	  substrates_count(substrates_count),
 	  time_step(time_step),
+	  substrate_densities(std::make_unique<real_t[]>(substrates_count * mesh.voxel_count())),
 	  diffustion_coefficients(std::move(diffustion_coefficients)),
 	  decay_rates(std::move(decay_rates)),
 	  initial_conditions(std::move(initial_conditions)),
-	  substrate_densities(std::make_unique<real_t[]>(substrates_count * mesh.voxel_count())),
 	  gradients(std::make_unique<real_t[]>(mesh.dims * substrates_count * mesh.voxel_count())),
-	  dirichlet_values(std::make_unique<real_t[]>(substrates_count * mesh.voxel_count())),
-	  dirichlet_conditions(std::make_unique<bool[]>(substrates_count * mesh.voxel_count()))
+	  dirichlet_voxels_count(0),
+	  dirichlet_voxels(nullptr),
+	  dirichlet_values(nullptr),
+	  dirichlet_conditions(nullptr)
 {
 	if (mesh.dims == 1)
 		initialize_substrate_densities<1>(substrate_densities.get(), this->initial_conditions.get(), *this);

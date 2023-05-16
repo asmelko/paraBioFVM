@@ -1,4 +1,4 @@
-#include "diffusion_solvers/host_solver.h"
+#include "compute/host/diffusion/diffusion_solver.h"
 
 int main()
 {

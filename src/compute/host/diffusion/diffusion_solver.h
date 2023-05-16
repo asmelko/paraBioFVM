@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../microenvironment.h"
+#include "../../../microenvironment.h"
 
 /*
 The diffusion is the problem of solving tridiagonal matrix system with these coeficients:
@@ -18,6 +18,7 @@ Since the matrix is constant for multiple right hand sides, we precompute its va
 b_1'  == 1/b_1
 b_i'  == 1/(b_i - a_i*c_i*b_(i-1)')                           1 <  i <= n
 e_i   == a_i*b_(i-1)'                                         1 <  i <= n
+
 Then, the forward substitution is as follows (n multiplication + n subtractions):
 d_i'  == d_i - e_i*d_(i-1)                                    1 <  i <= n
 The backpropagation (2n multiplication + n subtractions):
