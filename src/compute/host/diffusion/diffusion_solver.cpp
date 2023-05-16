@@ -141,37 +141,37 @@ void diffusion_solver::solve_1d(microenvironment& m)
 {
 	auto dens_l = layout_traits<1>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_1d(m);
 
 	solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(), dens_l);
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_1d(m);
 }
 
 void diffusion_solver::solve_2d(microenvironment& m)
 {
 	auto dens_l = layout_traits<2>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_2d(m);
 
 	// swipe x
 	for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
 		solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(), dens_l ^ noarr::fix<'y'>(y));
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_2d(m);
 
 	// swipe y
 	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
 		solve_slice<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(), dens_l ^ noarr::fix<'x'>(x));
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_2d(m);
 }
 
 void diffusion_solver::solve_3d(microenvironment& m)
 {
 	auto dens_l = layout_traits<3>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_3d(m);
 
 	// swipe x
 	for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
@@ -183,7 +183,7 @@ void diffusion_solver::solve_3d(microenvironment& m)
 		}
 	}
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_3d(m);
 
 	// swipe y
 	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
@@ -195,7 +195,7 @@ void diffusion_solver::solve_3d(microenvironment& m)
 		}
 	}
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_3d(m);
 
 	// swipe z
 	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
@@ -207,5 +207,5 @@ void diffusion_solver::solve_3d(microenvironment& m)
 		}
 	}
 
-	dirichlet_solver::solve(m);
+	dirichlet_solver::solve_3d(m);
 }

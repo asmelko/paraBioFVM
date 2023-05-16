@@ -15,4 +15,8 @@ class dirichlet_solver
 {
 public:
 	static void solve(microenvironment& m);
+    
+    static void solve_1d(microenvironment& m);
+    static void solve_2d(microenvironment& m);
+    static void solve_3d(microenvironment& m);
 };
