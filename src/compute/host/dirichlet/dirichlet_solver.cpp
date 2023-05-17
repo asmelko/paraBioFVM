@@ -23,14 +23,15 @@ void solve_internal(real_t* __restrict__ substrate_densities, const index_t* __r
 
 	auto dens_l = layout_traits<dims>::construct_density_layout(substrates_count, grid_shape);
 
-	for (index_t voxel = 0; voxel < dirichlet_voxels_count; ++voxel)
+	for (index_t voxel_idx = 0; voxel_idx < dirichlet_voxels_count; ++voxel_idx)
 	{
-		auto voxel_l = dens_l ^ fix_dims<dims>(dirichlet_voxels + dims * voxel);
+		auto subs_l = dens_l ^ fix_dims<dims>(dirichlet_voxels + dims * voxel_idx);
 
 		for (index_t s = 0; s < substrates_count; ++s)
 		{
-			if (dirichlet_conditions[voxel * substrates_count + s])
-				(voxel_l | noarr::get_at<'s'>(substrate_densities, s)) = dirichlet_values[voxel * substrates_count + s];
+			if (dirichlet_conditions[voxel_idx * substrates_count + s])
+				(subs_l | noarr::get_at<'s'>(substrate_densities, s)) =
+					dirichlet_values[voxel_idx * substrates_count + s];
 		}
 	}
 }
