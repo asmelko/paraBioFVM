@@ -4,6 +4,7 @@
 #include <noarr/structures/interop/bag.hpp>
 
 #include "compute/host/diffusion/diffusion_solver.h"
+#include "compute/host/gradient/gradient_solver.h"
 #include "traits.h"
 
 microenvironment default_microenv(cartesian_mesh mesh)
@@ -379,4 +380,151 @@ TEST(host_dirichlet_solver, multiple_cond_D3)
 
 		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 1000);
 	});
+}
+
+TEST(host_gradient_solver, D1)
+{
+	cartesian_mesh mesh(1, { 0, 0, 0 }, { 100, 0, 0 }, { 20, 0, 0 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	// Set dummy densities
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+	{
+		(dens_l | noarr::get_at<'s', 'x'>(m.substrate_densities.get(), 0, x)) = x * x;
+		(dens_l | noarr::get_at<'s', 'x'>(m.substrate_densities.get(), 1, m.mesh.grid_shape[0] - 1 - x)) = x * x;
+	}
+
+	gradient_solver::solve(m);
+
+	auto grad_l = layout_traits<1>::construct_gradient_layout(substrates_count, mesh.grid_shape);
+
+	auto gradients = noarr::make_bag(grad_l, m.gradients.get());
+
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 0)), (1 - 0) / 20.);
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 1)), (4 - 0) / 40.);
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 2)), (9 - 1) / 40.);
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 3)), (16 - 4) / 40.);
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 4)), (16 - 9) / 20.);
+
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 4)), -(1 - 0) / 20.);
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 3)), -(4 - 0) / 40.);
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 2)), -(9 - 1) / 40.);
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 1)), -(16 - 4) / 40.);
+	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 0)), -(16 - 9) / 20.);
+}
+
+TEST(host_gradient_solver, D2)
+{
+	cartesian_mesh mesh(2, { 0, 0, 0 }, { 100, 100, 0 }, { 20, 20, 0 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto get_dens = [](index_t x, index_t y, index_t s) { return (x + y) * (x + y) + s; };
+
+	// Set dummy densities
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+		{
+			(dens_l | noarr::get_at<'s', 'x', 'y'>(m.substrate_densities.get(), 0, x, y)) = get_dens(x, y, 0);
+			(dens_l | noarr::get_at<'s', 'x', 'y'>(m.substrate_densities.get(), 1, x, y)) = get_dens(x, y, 1);
+		}
+
+	gradient_solver::solve(m);
+
+	auto grad_l = layout_traits<2>::construct_gradient_layout(substrates_count, mesh.grid_shape);
+
+	auto gradients = noarr::make_bag(grad_l, m.gradients.get());
+
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+		{
+			auto x_up = x + (x == m.mesh.grid_shape[0] - 1 ? 0 : 1);
+			auto x_down = x - (x == 0 ? 0 : 1);
+			auto x_div = (x == 0 || x == m.mesh.grid_shape[0] - 1) ? 20. : 40.;
+
+			EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y'>(0, 0, x, y)),
+							(get_dens(x_up, y, 0) - get_dens(x_down, y, 0)) / x_div);
+			EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y'>(0, 1, x, y)),
+							(get_dens(x_up, y, 1) - get_dens(x_down, y, 1)) / x_div);
+
+
+			auto y_up = y + (y == m.mesh.grid_shape[1] - 1 ? 0 : 1);
+			auto y_down = y - (y == 0 ? 0 : 1);
+			auto y_div = (y == 0 || y == m.mesh.grid_shape[1] - 1) ? 20. : 40.;
+
+			EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y'>(1, 0, x, y)),
+							(get_dens(x, y_up, 0) - get_dens(x, y_down, 0)) / y_div);
+			EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y'>(1, 1, x, y)),
+							(get_dens(x, y_up, 1) - get_dens(x, y_down, 1)) / y_div);
+		}
+}
+
+TEST(host_gradient_solver, D3)
+{
+	cartesian_mesh mesh(3, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto get_dens = [](index_t x, index_t y, index_t z, index_t s) { return (x + y + z) * (x + y + z) + s; };
+
+	// Set dummy densities
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+			for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
+			{
+				(dens_l | noarr::get_at<'s', 'x', 'y', 'z'>(m.substrate_densities.get(), 0, x, y, z)) =
+					get_dens(x, y, z, 0);
+				(dens_l | noarr::get_at<'s', 'x', 'y', 'z'>(m.substrate_densities.get(), 1, x, y, z)) =
+					get_dens(x, y, z, 1);
+			}
+
+	gradient_solver::solve(m);
+
+	auto grad_l = layout_traits<3>::construct_gradient_layout(substrates_count, mesh.grid_shape);
+
+	auto gradients = noarr::make_bag(grad_l, m.gradients.get());
+
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+			for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
+			{
+				auto x_up = x + (x == m.mesh.grid_shape[0] - 1 ? 0 : 1);
+				auto x_down = x - (x == 0 ? 0 : 1);
+				auto x_div = (x == 0 || x == m.mesh.grid_shape[0] - 1) ? 20. : 40.;
+
+				EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y', 'z'>(0, 0, x, y, z)),
+								(get_dens(x_up, y, z, 0) - get_dens(x_down, y, z, 0)) / x_div);
+				EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y', 'z'>(0, 1, x, y, z)),
+								(get_dens(x_up, y, z, 1) - get_dens(x_down, y, z, 1)) / x_div);
+
+
+				auto y_up = y + (y == m.mesh.grid_shape[1] - 1 ? 0 : 1);
+				auto y_down = y - (y == 0 ? 0 : 1);
+				auto y_div = (y == 0 || y == m.mesh.grid_shape[1] - 1) ? 20. : 40.;
+
+				EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y', 'z'>(1, 0, x, y, z)),
+								(get_dens(x, y_up, z, 0) - get_dens(x, y_down, z, 0)) / y_div);
+				EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y', 'z'>(1, 1, x, y, z)),
+								(get_dens(x, y_up, z, 1) - get_dens(x, y_down, z, 1)) / y_div);
+
+
+				auto z_up = z + (z == m.mesh.grid_shape[2] - 1 ? 0 : 1);
+				auto z_down = z - (z == 0 ? 0 : 1);
+				auto z_div = (z == 0 || z == m.mesh.grid_shape[2] - 1) ? 20. : 40.;
+
+				EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y', 'z'>(2, 0, x, y, z)),
+								(get_dens(x, y, z_up, 0) - get_dens(x, y, z_down, 0)) / z_div);
+				EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y', 'z'>(2, 1, x, y, z)),
+								(get_dens(x, y, z_up, 1) - get_dens(x, y, z_down, 1)) / z_div);
+			}
 }
