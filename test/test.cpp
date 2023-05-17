@@ -101,30 +101,34 @@ TEST(host_diffusion_solver, D3)
 	});
 }
 
-void add_dirichlet_at(microenvironment& m, point_t<index_t, 3> index, real_t value)
+void add_dirichlet_at(microenvironment& m, index_t substrates_count, const std::vector<point_t<index_t, 3>>& indices,
+					  const std::vector<real_t>& values)
 {
-	m.dirichlet_voxels_count = 1;
-	m.dirichlet_voxels = std::make_unique<index_t[]>(m.mesh.dims);
+	m.dirichlet_voxels_count = indices.size();
+	m.dirichlet_voxels = std::make_unique<index_t[]>(m.dirichlet_voxels_count * m.mesh.dims);
 
-	for (int i = 0; i < m.mesh.dims; i++)
-		m.dirichlet_voxels[i] = index[i];
+	for (int i = 0; i < m.dirichlet_voxels_count; i++)
+		for (int d = 0; d < m.mesh.dims; d++)
+			m.dirichlet_voxels[i * m.mesh.dims + d] = indices[i][d];
 
-	m.dirichlet_values = std::make_unique<real_t[]>(2);
-	m.dirichlet_values[0] = value;
-	m.dirichlet_values[1] = 0;
-	m.dirichlet_conditions = std::make_unique<bool[]>(2);
-	m.dirichlet_conditions[0] = true; // only the first substrate
-	m.dirichlet_conditions[1] = false;
+	m.dirichlet_values = std::make_unique<real_t[]>(substrates_count * m.dirichlet_voxels_count);
+	m.dirichlet_conditions = std::make_unique<bool[]>(substrates_count * m.dirichlet_voxels_count);
+
+	for (int i = 0; i < m.dirichlet_voxels_count; i++)
+	{
+		m.dirichlet_values[i * substrates_count] = values[i];
+		m.dirichlet_conditions[i * substrates_count] = true; // only the first substrate
+	}
 }
 
-TEST(host_dirichlet_solver, D1)
+TEST(host_dirichlet_solver, one_cond_D1)
 {
 	cartesian_mesh mesh(1, { 0, 0, 0 }, { 100, 0, 0 }, { 20, 0, 0 });
 
 	index_t substrates_count = 2;
 	auto m = default_microenv(mesh);
 
-	add_dirichlet_at(m, { 2, 0, 0 }, 1);
+	add_dirichlet_at(m, substrates_count, { { 2, 0, 0 } }, { 1 });
 
 	diffusion_solver s;
 
@@ -146,14 +150,14 @@ TEST(host_dirichlet_solver, D1)
 	});
 }
 
-TEST(host_dirichlet_solver, D2)
+TEST(host_dirichlet_solver, one_cond_D2)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 60, 60, 0 }, { 20, 20, 0 });
 
 	index_t substrates_count = 2;
 	auto m = default_microenv(mesh);
 
-	add_dirichlet_at(m, { 1, 1, 0 }, 10);
+	add_dirichlet_at(m, substrates_count, { { 1, 1, 0 } }, { 10 });
 
 	diffusion_solver s;
 
@@ -192,14 +196,14 @@ TEST(host_dirichlet_solver, D2)
 	});
 }
 
-TEST(host_dirichlet_solver, D3)
+TEST(host_dirichlet_solver, one_cond_D3)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 60, 60, 60 }, { 20, 20, 20 });
 
 	index_t substrates_count = 2;
 	auto m = default_microenv(mesh);
 
-	add_dirichlet_at(m, { 1, 1, 1 }, 1000);
+	add_dirichlet_at(m, substrates_count, { { 1, 1, 1 } }, { 1000 });
 
 	diffusion_solver s;
 
