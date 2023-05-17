@@ -252,3 +252,131 @@ TEST(host_dirichlet_solver, one_cond_D3)
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(1, 2, 1)), 0.061110392);
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(2, 2, 1)), 0.0012637526);
 }
+
+TEST(host_dirichlet_solver, multiple_cond_D1)
+{
+	cartesian_mesh mesh(1, { 0, 0, 0 }, { 100, 0, 0 }, { 20, 0, 0 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	add_dirichlet_at(m, substrates_count, { { 0, 0, 0 }, { 4, 0, 0 } }, { 1, 1 });
+
+	diffusion_solver s;
+
+	s.initialize(m);
+
+	s.solve(m);
+
+	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	noarr::traverser(dens_l).for_dims<'x'>([&](auto t) {
+		auto s = t.state();
+
+		auto l = dens_l ^ noarr::fix(s);
+		if (noarr::get_index<'x'>(s) == 0 || noarr::get_index<'x'>(s) == 4)
+			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 1);
+		else
+			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.03846154);
+		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 1), 0.0625);
+	});
+}
+
+TEST(host_dirichlet_solver, multiple_cond_D2)
+{
+	cartesian_mesh mesh(2, { 0, 0, 0 }, { 60, 60, 0 }, { 20, 20, 0 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	add_dirichlet_at(m, substrates_count, { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } }, { 10, 10, 10 });
+
+	diffusion_solver s;
+
+	s.initialize(m);
+
+	s.solve(m);
+
+	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	// second substrate should not change
+	noarr::traverser(dens_l).for_dims<'x', 'y'>([&](auto t) {
+		auto s = t.state();
+
+		auto l = dens_l ^ noarr::fix(s);
+
+		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 1), 0.013840831);
+	});
+
+	noarr::traverser(dens_l).for_dims<'x', 'y'>([&](auto t) {
+		auto s = t.state();
+
+		auto l = dens_l ^ noarr::fix(s);
+		// First row
+		if (noarr::get_index<'y'>(s) == 0)
+			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 10);
+		// Second row
+		else if (noarr::get_index<'y'>(s) == 1)
+			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.0081802057);
+		// Thrid row
+		else
+			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.0054969075);
+	});
+}
+
+TEST(host_dirichlet_solver, multiple_cond_D3)
+{
+	cartesian_mesh mesh(3, { 0, 0, 0 }, { 60, 60, 60 }, { 20, 20, 20 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	add_dirichlet_at(m, substrates_count,
+					 { { 0, 0, 1 },
+					   { 1, 0, 1 },
+					   { 2, 0, 1 },
+					   { 0, 1, 1 },
+					   { 1, 1, 1 },
+					   { 2, 1, 1 },
+					   { 0, 2, 1 },
+					   { 1, 2, 1 },
+					   { 2, 2, 1 } },
+					 { 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000 });
+
+	diffusion_solver s;
+
+	s.initialize(m);
+
+	s.solve(m);
+
+	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	// second substrate should not change
+	noarr::traverser(dens_l).for_dims<'x', 'y', 'z'>([&](auto t) {
+		auto s = t.state();
+
+		auto l = dens_l ^ noarr::fix(s);
+
+		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 1), 0.0046296306);
+	});
+
+	// lower and upper xy slices are the same
+	for (auto z : { 0, 2 })
+	{
+		noarr::traverser(dens_l).for_dims<'x', 'y'>([&](auto t) {
+			auto s = t.state();
+
+			auto l = dens_l ^ noarr::fix(s);
+
+			EXPECT_FLOAT_EQ((l | noarr::get_at<'z', 's'>(m.substrate_densities.get(), z, 0)), 0.566124);
+		});
+	}
+
+	noarr::traverser(dens_l).for_dims<'x', 'y'>([&](auto t) {
+		auto s = t.state();
+
+		auto l = dens_l ^ noarr::fix(s) ^ noarr::fix<'z'>(1);
+
+		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 1000);
+	});
+}
