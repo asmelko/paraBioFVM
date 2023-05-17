@@ -174,9 +174,9 @@ void diffusion_solver::solve_3d(microenvironment& m)
 	dirichlet_solver::solve_3d(m);
 
 	// swipe x
-	for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+	for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
 	{
-		for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
 		{
 			solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(),
 							 dens_l ^ noarr::fix<'y'>(y) ^ noarr::fix<'z'>(z));
@@ -186,9 +186,9 @@ void diffusion_solver::solve_3d(microenvironment& m)
 	dirichlet_solver::solve_3d(m);
 
 	// swipe y
-	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+	for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
 	{
-		for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
+		for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
 		{
 			solve_slice<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(),
 							 dens_l ^ noarr::fix<'x'>(x) ^ noarr::fix<'z'>(z));
@@ -198,9 +198,9 @@ void diffusion_solver::solve_3d(microenvironment& m)
 	dirichlet_solver::solve_3d(m);
 
 	// swipe z
-	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+	for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
 	{
-		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+		for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
 		{
 			solve_slice<'z'>(m.substrate_densities.get(), bz_.get(), cz_.get(), ez_.get(),
 							 dens_l ^ noarr::fix<'x'>(x) ^ noarr::fix<'y'>(y));
