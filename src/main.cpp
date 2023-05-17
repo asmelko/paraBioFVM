@@ -1,8 +1,9 @@
 #include "compute/host/diffusion/diffusion_solver.h"
+#include "compute/host/gradient/gradient_solver.h"
 
 int main()
 {
-	cartesian_mesh mesh(2, { 0, 0, 0 }, { 80, 80, 80 }, { 20, 20, 20 });
+	cartesian_mesh mesh(3, { 0, 0, 0 }, { 10000, 10000, 10000 }, { 20, 20, 20 });
 
 	real_t diffusion_time_step = 5;
 	index_t substrates_count = 2;
@@ -26,4 +27,6 @@ int main()
 	s.initialize(m);
 
 	s.solve(m);
+
+	gradient_solver::solve(m);
 }
