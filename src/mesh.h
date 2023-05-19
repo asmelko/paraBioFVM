@@ -15,5 +15,5 @@ struct cartesian_mesh
 	cartesian_mesh(index_t dims, point_t<index_t, 3> bounding_box_mins, point_t<index_t, 3> bounding_box_maxs,
 				   point_t<index_t, 3> voxel_shape);
 
-	index_t voxel_count() const;
+	std::size_t voxel_count() const;
 };

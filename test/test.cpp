@@ -6,48 +6,14 @@
 #include "compute/host/diffusion/diffusion_solver.h"
 #include "compute/host/gradient/gradient_solver.h"
 #include "traits.h"
+#include "utils.h"
 
-microenvironment default_microenv(cartesian_mesh mesh)
-{
-	real_t diffusion_time_step = 5;
-	index_t substrates_count = 2;
+class host_diffusion_solver : public testing::TestWithParam<bool>
+{};
 
-	auto diff_coefs = std::make_unique<real_t[]>(2);
-	diff_coefs[0] = 4;
-	diff_coefs[1] = 2;
-	auto decay_rates = std::make_unique<real_t[]>(2);
-	decay_rates[0] = 5;
-	decay_rates[1] = 3;
+INSTANTIATE_TEST_SUITE_P(vectorize, host_diffusion_solver, testing::Values(true, false));
 
-	auto initial_conds = std::make_unique<real_t[]>(2);
-	initial_conds[0] = 1;
-	initial_conds[1] = 1;
-
-	return microenvironment(mesh, substrates_count, diffusion_time_step, std::move(diff_coefs), std::move(decay_rates),
-							std::move(initial_conds));
-}
-
-microenvironment biorobots_microenv(cartesian_mesh mesh)
-{
-	real_t diffusion_time_step = 0.01;
-	index_t substrates_count = 2;
-
-	auto diff_coefs = std::make_unique<real_t[]>(2);
-	diff_coefs[0] = 1000;
-	diff_coefs[1] = 1000;
-	auto decay_rates = std::make_unique<real_t[]>(2);
-	decay_rates[0] = 0.1;
-	decay_rates[1] = 0.4;
-
-	auto initial_conds = std::make_unique<real_t[]>(2);
-	initial_conds[0] = 0;
-	initial_conds[1] = 0;
-
-	return microenvironment(mesh, substrates_count, diffusion_time_step, std::move(diff_coefs), std::move(decay_rates),
-							std::move(initial_conds));
-}
-
-TEST(host_diffusion_solver, D1)
+TEST_P(host_diffusion_solver, D1_uniform)
 {
 	cartesian_mesh mesh(1, { 0, 0, 0 }, { 80, 0, 0 }, { 20, 0, 0 });
 
@@ -56,7 +22,7 @@ TEST(host_diffusion_solver, D1)
 
 	diffusion_solver s;
 
-	s.initialize(m);
+	s.initialize(m, GetParam());
 
 	s.solve(m);
 
@@ -72,7 +38,7 @@ TEST(host_diffusion_solver, D1)
 	});
 }
 
-TEST(host_diffusion_solver, D2)
+TEST_P(host_diffusion_solver, D2_uniform)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 800, 800, 0 }, { 20, 20, 0 });
 
@@ -81,7 +47,7 @@ TEST(host_diffusion_solver, D2)
 
 	diffusion_solver s;
 
-	s.initialize(m);
+	s.initialize(m, GetParam());
 
 	s.solve(m);
 
@@ -97,7 +63,7 @@ TEST(host_diffusion_solver, D2)
 	});
 }
 
-TEST(host_diffusion_solver, D3_uniform)
+TEST_P(host_diffusion_solver, D3_uniform)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 200, 200, 200 }, { 20, 20, 20 });
 
@@ -106,7 +72,7 @@ TEST(host_diffusion_solver, D3_uniform)
 
 	diffusion_solver s;
 
-	s.initialize(m);
+	s.initialize(m, GetParam());
 
 	s.solve(m);
 
@@ -122,7 +88,7 @@ TEST(host_diffusion_solver, D3_uniform)
 	});
 }
 
-TEST(host_diffusion_solver, D1_random)
+TEST_P(host_diffusion_solver, D1_random)
 {
 	cartesian_mesh mesh(1, { 0, 0, 0 }, { 60, 0, 0 }, { 20, 20, 20 });
 
@@ -141,7 +107,7 @@ TEST(host_diffusion_solver, D1_random)
 
 	diffusion_solver s;
 
-	s.initialize(m);
+	s.initialize(m, GetParam());
 
 	s.solve(m);
 
@@ -158,7 +124,7 @@ TEST(host_diffusion_solver, D1_random)
 		}
 }
 
-TEST(host_diffusion_solver, D2_random)
+TEST_P(host_diffusion_solver, D2_random)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 60, 60, 0 }, { 20, 20, 20 });
 
@@ -178,7 +144,7 @@ TEST(host_diffusion_solver, D2_random)
 
 	diffusion_solver s;
 
-	s.initialize(m);
+	s.initialize(m, GetParam());
 
 	s.solve(m);
 
@@ -198,7 +164,7 @@ TEST(host_diffusion_solver, D2_random)
 			}
 }
 
-TEST(host_diffusion_solver, D3_random)
+TEST_P(host_diffusion_solver, D3_random)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 60, 60, 60 }, { 20, 20, 20 });
 
@@ -220,7 +186,7 @@ TEST(host_diffusion_solver, D3_random)
 
 	diffusion_solver s;
 
-	s.initialize(m);
+	s.initialize(m, GetParam());
 
 	s.solve(m);
 
@@ -247,26 +213,6 @@ TEST(host_diffusion_solver, D3_random)
 						(dens_l | noarr::get_at<'x', 'y', 'z', 's'>(m.substrate_densities.get(), x, y, z, s)),
 						expected[index]);
 				}
-}
-
-void add_dirichlet_at(microenvironment& m, index_t substrates_count, const std::vector<point_t<index_t, 3>>& indices,
-					  const std::vector<real_t>& values)
-{
-	m.dirichlet_voxels_count = indices.size();
-	m.dirichlet_voxels = std::make_unique<index_t[]>(m.dirichlet_voxels_count * m.mesh.dims);
-
-	for (int i = 0; i < m.dirichlet_voxels_count; i++)
-		for (int d = 0; d < m.mesh.dims; d++)
-			m.dirichlet_voxels[i * m.mesh.dims + d] = indices[i][d];
-
-	m.dirichlet_values = std::make_unique<real_t[]>(substrates_count * m.dirichlet_voxels_count);
-	m.dirichlet_conditions = std::make_unique<bool[]>(substrates_count * m.dirichlet_voxels_count);
-
-	for (int i = 0; i < m.dirichlet_voxels_count; i++)
-	{
-		m.dirichlet_values[i * substrates_count] = values[i];
-		m.dirichlet_conditions[i * substrates_count] = true; // only the first substrate
-	}
 }
 
 TEST(host_dirichlet_solver, one_cond_D1)
