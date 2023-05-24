@@ -11,7 +11,7 @@
 class host_diffusion_solver : public testing::TestWithParam<bool>
 {};
 
-INSTANTIATE_TEST_SUITE_P(vectorize, host_diffusion_solver, testing::Values(true, false));
+INSTANTIATE_TEST_SUITE_P(vectorize, host_diffusion_solver, testing::Values(4, 1));
 
 TEST_P(host_diffusion_solver, D1_uniform)
 {
