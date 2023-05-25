@@ -28,14 +28,29 @@ int main()
 
 	for (index_t i = 0; i < 100; ++i)
 	{
-		auto start = std::chrono::high_resolution_clock::now();
+		std::size_t diffusion_duration, gradient_duration;
+		{
+			auto start = std::chrono::high_resolution_clock::now();
 
-		s.solve(m);
+			s.solve(m);
 
-		auto end = std::chrono::high_resolution_clock::now();
+			auto end = std::chrono::high_resolution_clock::now();
 
-		std::cout << "Diffusion time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
-				  << " ms" << std::endl;
+			diffusion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		}
+
+		{
+			auto start = std::chrono::high_resolution_clock::now();
+
+			gradient_solver::solve(m);
+
+			auto end = std::chrono::high_resolution_clock::now();
+
+			gradient_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		}
+
+		std::cout << "Diffusion time: " << diffusion_duration << " ms,\t Gradient time: " << gradient_duration << " ms"
+				  << std::endl;
 	}
 
 	s.solve(m);

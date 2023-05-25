@@ -33,7 +33,7 @@ void diffusion_solver::initialize(microenvironment& m)
 	index_t substrates_size = m.substrates_count * sizeof(real_t) * 8;
 	index_t multiple = lcm(substrates_size, register_size);
 
-	while (multiple > 10 * register_size)
+	while (multiple > 10 * register_size && multiple > substrates_size)
 		multiple -= substrates_size;
 
 	initialize(m, multiple / substrates_size);

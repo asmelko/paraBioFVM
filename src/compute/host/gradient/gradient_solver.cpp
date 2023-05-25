@@ -4,93 +4,180 @@
 
 #include "../../../traits.h"
 
-template <char dim, index_t dim_idx, typename density_layout_t, typename gradient_layout_t>
-void solve_single(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
-				  const density_layout_t dens_l, const gradient_layout_t grad_l, index_t index)
+template <typename density_layout_t, typename gradient_layout_t>
+void solve_x(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
+			 const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
-	const index_t dim_size = dens_l | noarr::get_length<dim>();
+	const index_t n = dens_l | noarr::get_length<'x'>();
+	const index_t s_dim = dens_l | noarr::get_length<'s'>();
 
-	const index_t up = index + (index == dim_size - 1 ? 0 : 1);
-	const index_t down = index - (index == 0 ? 0 : 1);
-	const real_t divisor = dim_shape + (index == 0 || (index == dim_size - 1) ? 0 : dim_shape);
+	const real_t border_factor = 1.f / dim_shape;
+	const real_t center_factor = 1.f / (dim_shape * 2);
 
-	(grad_l | noarr::get_at<'d'>(gradients, noarr::lit<dim_idx>)) =
-		((dens_l | noarr::get_at<dim>(densities, up)) - (dens_l | noarr::get_at<dim>(densities, down))) / divisor;
+	auto grad_l2 = grad_l ^ noarr::merge_blocks<'x', 's', 'X'>();
+	auto dens_l2 = dens_l ^ noarr::merge_blocks<'x', 's', 'X'>();
+
+	for (index_t s = 0; s < s_dim; s++)
+	{
+		(grad_l | noarr::get_at<'s', 'x'>(gradients, s, 0)) =
+			((dens_l | noarr::get_at<'s', 'x'>(densities, s, 1)) - (dens_l | noarr::get_at<'s', 'x'>(densities, s, 0)))
+			* border_factor;
+	}
+
+	for (index_t x = 1 * s_dim; x < (n - 1) * s_dim; x++)
+	{
+		(grad_l2 | noarr::get_at<'X'>(gradients, x)) = ((dens_l2 | noarr::get_at<'X'>(densities, x + s_dim))
+														- (dens_l2 | noarr::get_at<'X'>(densities, x - s_dim)))
+													   * center_factor;
+	}
+
+	for (index_t s = 0; s < s_dim; s++)
+	{
+		(grad_l | noarr::get_at<'s', 'x'>(gradients, s, n - 1)) =
+			((dens_l | noarr::get_at<'s', 'x'>(densities, s, n - 1))
+			 - (dens_l | noarr::get_at<'s', 'x'>(densities, s, n - 2)))
+			* border_factor;
+	}
+}
+
+template <typename density_layout_t, typename gradient_layout_t>
+void solve_y(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
+			 const density_layout_t dens_l, const gradient_layout_t grad_l)
+{
+	const index_t y_dim = dens_l | noarr::get_length<'y'>();
+	const index_t x_dim = dens_l | noarr::get_length<'x'>();
+	const index_t s_dim = dens_l | noarr::get_length<'s'>();
+
+	const real_t border_factor = 1.f / dim_shape;
+	const real_t center_factor = 1.f / (dim_shape * 2);
+
+	auto grad_l2 = grad_l ^ noarr::merge_blocks<'x', 's', 'X'>();
+	auto dens_l2 = dens_l ^ noarr::merge_blocks<'x', 's', 'X'>();
+
+	for (index_t x = 0; x < x_dim * s_dim; x++)
+	{
+		(grad_l2 | noarr::get_at<'X', 'y'>(gradients, x, 0)) = ((dens_l2 | noarr::get_at<'X', 'y'>(densities, x, 1))
+																- (dens_l2 | noarr::get_at<'X', 'y'>(densities, x, 0)))
+															   * border_factor;
+	}
+
+	for (index_t y = 1; y < y_dim - 1; y++)
+	{
+		for (index_t x = 0; x < x_dim * s_dim; x++)
+		{
+			(grad_l2 | noarr::get_at<'X', 'y'>(gradients, x, y)) =
+				((dens_l2 | noarr::get_at<'X', 'y'>(densities, x, y + 1))
+				 - (dens_l2 | noarr::get_at<'X', 'y'>(densities, x, y - 1)))
+				* center_factor;
+		}
+	}
+
+	for (index_t x = 0; x < x_dim * s_dim; x++)
+	{
+		(grad_l2 | noarr::get_at<'X', 'y'>(gradients, x, y_dim - 1)) =
+			((dens_l2 | noarr::get_at<'X', 'y'>(densities, x, y_dim - 1))
+			 - (dens_l2 | noarr::get_at<'X', 'y'>(densities, x, y_dim - 2)))
+			* border_factor;
+	}
+}
+
+template <typename density_layout_t, typename gradient_layout_t>
+void solve_z(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
+			 const density_layout_t dens_l, const gradient_layout_t grad_l)
+{
+	const index_t z_dim = dens_l | noarr::get_length<'z'>();
+	const index_t y_dim = dens_l | noarr::get_length<'y'>();
+	const index_t x_dim = dens_l | noarr::get_length<'x'>();
+	const index_t s_dim = dens_l | noarr::get_length<'s'>();
+
+	const real_t border_factor = 1.f / dim_shape;
+	const real_t center_factor = 1.f / (dim_shape * 2);
+
+	auto grad_l2 = grad_l ^ noarr::merge_blocks<'x', 's', 'X'>();
+	auto dens_l2 = dens_l ^ noarr::merge_blocks<'x', 's', 'X'>();
+
+	for (index_t y = 0; y < y_dim; y++)
+	{
+		for (index_t x = 0; x < x_dim * s_dim; x++)
+		{
+			(grad_l2 | noarr::get_at<'X', 'y', 'z'>(gradients, x, y, 0)) =
+				((dens_l2 | noarr::get_at<'X', 'y', 'z'>(densities, x, y, 1))
+				 - (dens_l2 | noarr::get_at<'X', 'y', 'z'>(densities, x, y, 0)))
+				* border_factor;
+		}
+	}
+
+	for (index_t z = 1; z < z_dim - 1; z++)
+	{
+		for (index_t y = 0; y < y_dim; y++)
+		{
+			for (index_t x = 0; x < x_dim * s_dim; x++)
+			{
+				(grad_l2 | noarr::get_at<'X', 'y', 'z'>(gradients, x, y, z)) =
+					((dens_l2 | noarr::get_at<'X', 'y', 'z'>(densities, x, y, z + 1))
+					 - (dens_l2 | noarr::get_at<'X', 'y', 'z'>(densities, x, y, z - 1)))
+					* center_factor;
+			}
+		}
+	}
+
+	for (index_t y = 0; y < y_dim; y++)
+	{
+		for (index_t x = 0; x < x_dim * s_dim; x++)
+		{
+			(grad_l2 | noarr::get_at<'X', 'y', 'z'>(gradients, x, y, z_dim - 1)) =
+				((dens_l2 | noarr::get_at<'X', 'y', 'z'>(densities, x, y, z_dim - 1))
+				 - (dens_l2 | noarr::get_at<'X', 'y', 'z'>(densities, x, y, z_dim - 2)))
+				* border_factor;
+		}
+	}
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
 void solve_3d_internal(real_t* __restrict__ gradients, real_t* __restrict__ densities, point_t<index_t, 3> voxel_shape,
 					   const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
-    const index_t z_dim = dens_l | noarr::get_length<'z'>();
-    const index_t y_dim = dens_l | noarr::get_length<'y'>();
-    const index_t x_dim = dens_l | noarr::get_length<'x'>();
-    const index_t s_dim = dens_l | noarr::get_length<'s'>();
+	const index_t z_dim = dens_l | noarr::get_length<'z'>();
+	const index_t y_dim = dens_l | noarr::get_length<'y'>();
 
 	for (index_t z = 0; z < z_dim; z++)
 	{
 		for (index_t y = 0; y < y_dim; y++)
 		{
-			for (index_t x = 0; x < x_dim; x++)
-			{
-				for (index_t s = 0; s < s_dim; s++)
-				{
-					solve_single<'x', 0>(gradients, densities, voxel_shape[0],
-										 dens_l ^ noarr::fix<'s', 'y', 'z'>(s, y, z),
-										 grad_l ^ noarr::fix<'s', 'x', 'y', 'z'>(s, x, y, z), x);
-
-					solve_single<'y', 1>(gradients, densities, voxel_shape[1],
-										 dens_l ^ noarr::fix<'s', 'x', 'z'>(s, x, z),
-										 grad_l ^ noarr::fix<'s', 'x', 'y', 'z'>(s, x, y, z), y);
-
-					solve_single<'z', 2>(gradients, densities, voxel_shape[2],
-										 dens_l ^ noarr::fix<'s', 'x', 'y'>(s, x, y),
-										 grad_l ^ noarr::fix<'s', 'x', 'y', 'z'>(s, x, y, z), z);
-				}
-			}
+			solve_x(gradients, densities, voxel_shape[0], dens_l ^ noarr::fix<'y', 'z'>(y, z),
+					grad_l ^ noarr::fix<'y', 'z', 'd'>(y, z, noarr::lit<0>));
 		}
 	}
+
+	for (index_t z = 0; z < z_dim; z++)
+	{
+		solve_y(gradients, densities, voxel_shape[1], dens_l ^ noarr::fix<'z'>(z),
+				grad_l ^ noarr::fix<'z', 'd'>(z, noarr::lit<1>));
+	}
+
+	solve_z(gradients, densities, voxel_shape[2], dens_l, grad_l ^ noarr::fix<'d'>(noarr::lit<2>));
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
 void solve_2d_internal(real_t* __restrict__ gradients, real_t* __restrict__ densities, point_t<index_t, 3> voxel_shape,
 					   const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
-    const index_t y_dim = dens_l | noarr::get_length<'y'>();
-    const index_t x_dim = dens_l | noarr::get_length<'x'>();
-    const index_t s_dim = dens_l | noarr::get_length<'s'>();
+	const index_t y_dim = dens_l | noarr::get_length<'y'>();
 
 	for (index_t y = 0; y < y_dim; y++)
 	{
-		for (index_t x = 0; x < x_dim; x++)
-		{
-			for (index_t s = 0; s < s_dim; s++)
-			{
-				solve_single<'x', 0>(gradients, densities, voxel_shape[0], dens_l ^ noarr::fix<'s', 'y'>(s, y),
-									 grad_l ^ noarr::fix<'s', 'x', 'y'>(s, x, y), x);
-
-				solve_single<'y', 1>(gradients, densities, voxel_shape[1], dens_l ^ noarr::fix<'s', 'x'>(s, x),
-									 grad_l ^ noarr::fix<'s', 'x', 'y'>(s, x, y), y);
-			}
-		}
+		solve_x(gradients, densities, voxel_shape[0], dens_l ^ noarr::fix<'y'>(y),
+				grad_l ^ noarr::fix<'y', 'd'>(y, noarr::lit<0>));
 	}
+
+	solve_y(gradients, densities, voxel_shape[1], dens_l, grad_l ^ noarr::fix<'d'>(noarr::lit<1>));
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
 void solve_1d_internal(real_t* __restrict__ gradients, real_t* __restrict__ densities, point_t<index_t, 3> voxel_shape,
 					   const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
-    const index_t x_dim = dens_l | noarr::get_length<'x'>();
-    const index_t s_dim = dens_l | noarr::get_length<'s'>();
-
-	for (index_t x = 0; x < x_dim; x++)
-	{
-		for (index_t s = 0; s < s_dim; s++)
-		{
-			solve_single<'x', 0>(gradients, densities, voxel_shape[0], dens_l ^ noarr::fix<'s'>(s),
-								 grad_l ^ noarr::fix<'s', 'x'>(s, x), x);
-		}
-	}
+	solve_x(gradients, densities, voxel_shape[0], dens_l, grad_l ^ noarr::fix<'d'>(noarr::lit<0>));
 }
 
 void gradient_solver::solve(microenvironment& m)

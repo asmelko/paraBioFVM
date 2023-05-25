@@ -59,8 +59,8 @@ struct layout_traits<3>
 			   ^ noarr::set_length<'y'>(grid_dims[1]) ^ noarr::set_length<'z'>(grid_dims[2]);
 	}
 
-	using gradient_layout_t = decltype(noarr::scalar<real_t>() ^ noarr::array<'d', 3>() ^ noarr::vector<'s'>()
-									   ^ noarr::vector<'x'>() ^ noarr::vector<'y'>() ^ noarr::vector<'z'>());
+	using gradient_layout_t = decltype(noarr::scalar<real_t>() ^ noarr::vector<'s'>() ^ noarr::vector<'x'>()
+									   ^ noarr::vector<'y'>() ^ noarr::vector<'z'>() ^ noarr::array<'d', 3>());
 
 	static auto construct_gradient_layout(index_t substrates_count, const point_t<index_t, 3>& grid_dims)
 	{

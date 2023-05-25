@@ -8,7 +8,7 @@
 #include "traits.h"
 #include "utils.h"
 
-class host_diffusion_solver : public testing::TestWithParam<bool>
+class host_diffusion_solver : public testing::TestWithParam<index_t>
 {};
 
 INSTANTIATE_TEST_SUITE_P(vectorize, host_diffusion_solver, testing::Values(4, 1));
