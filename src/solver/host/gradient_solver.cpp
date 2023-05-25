@@ -1,5 +1,7 @@
 #include "gradient_solver.h"
 
+#include <omp.h>
+
 #include <noarr/structures_extended.hpp>
 
 #include "../../traits.h"
@@ -142,22 +144,39 @@ void solve_3d_internal(real_t* __restrict__ gradients, real_t* __restrict__ dens
 	const index_t z_dim = dens_l | noarr::get_length<'z'>();
 	const index_t y_dim = dens_l | noarr::get_length<'y'>();
 
-	for (index_t z = 0; z < z_dim; z++)
+	omp_set_num_threads(3);
+
+#pragma omp parallel
 	{
-		for (index_t y = 0; y < y_dim; y++)
+#pragma omp sections
 		{
-			solve_x(gradients, densities, voxel_shape[0], dens_l ^ noarr::fix<'y', 'z'>(y, z),
-					grad_l ^ noarr::fix<'y', 'z', 'd'>(y, z, noarr::lit<0>));
+#pragma omp section
+			{
+				for (index_t z = 0; z < z_dim; z++)
+				{
+					for (index_t y = 0; y < y_dim; y++)
+					{
+						solve_x(gradients, densities, voxel_shape[0], dens_l ^ noarr::fix<'y', 'z'>(y, z),
+								grad_l ^ noarr::fix<'y', 'z', 'd'>(y, z, noarr::lit<0>));
+					}
+				}
+			}
+
+#pragma omp section
+			{
+				for (index_t z = 0; z < z_dim; z++)
+				{
+					solve_y(gradients, densities, voxel_shape[1], dens_l ^ noarr::fix<'z'>(z),
+							grad_l ^ noarr::fix<'z', 'd'>(z, noarr::lit<1>));
+				}
+			}
+
+#pragma omp section
+			{
+				solve_z(gradients, densities, voxel_shape[2], dens_l, grad_l ^ noarr::fix<'d'>(noarr::lit<2>));
+			}
 		}
 	}
-
-	for (index_t z = 0; z < z_dim; z++)
-	{
-		solve_y(gradients, densities, voxel_shape[1], dens_l ^ noarr::fix<'z'>(z),
-				grad_l ^ noarr::fix<'z', 'd'>(z, noarr::lit<1>));
-	}
-
-	solve_z(gradients, densities, voxel_shape[2], dens_l, grad_l ^ noarr::fix<'d'>(noarr::lit<2>));
 }
 
 template <typename density_layout_t, typename gradient_layout_t>

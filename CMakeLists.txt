@@ -27,6 +27,8 @@ FetchContent_Declare(
 )
 FetchContent_Populate(noarr_structures)
 
+find_package(OpenMP REQUIRED)
+
 # Target BioFVMCore
 file(GLOB_RECURSE src_files "src/*")
 list(FILTER src_files EXCLUDE REGEX ".*main\\..*")
@@ -34,6 +36,8 @@ list(FILTER src_files EXCLUDE REGEX ".*main\\..*")
 add_library(BioFVMCore OBJECT ${src_files})
 
 target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
+
+target_link_libraries(BioFVMCore PRIVATE OpenMP::OpenMP_CXX)
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	# Target unit_BioFVM
@@ -65,6 +69,7 @@ foreach(target ${all_targets})
 	if(MSVC)
 		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /bigobj>)
 	else()
-		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic>)
+		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic -march=native>)
 	endif()
+  # -fopt-info-vec-all=report.txt
 endforeach()
