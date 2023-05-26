@@ -252,28 +252,33 @@ void diffusion_solver::solve_3d(microenvironment& m)
 
 	dirichlet_solver::solve_3d(m);
 
-	// swipe x
-	for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
+// swipe x
+#pragma omp parallel
 	{
-		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+#pragma omp for
+		for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
 		{
-			solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(),
-							 dens_l ^ noarr::fix<'y'>(y) ^ noarr::fix<'z'>(z));
+			for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+			{
+				solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(),
+								 dens_l ^ noarr::fix<'y'>(y) ^ noarr::fix<'z'>(z));
+			}
 		}
+
+		dirichlet_solver::solve_3d(m);
+
+		// swipe y
+#pragma omp for
+		for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
+		{
+			solve_slice_yz<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(),
+								dens_l ^ noarr::fix<'z'>(z), substrate_factor_);
+		}
+		dirichlet_solver::solve_3d(m);
+
+		// swipe z
+		solve_slice_yz<'z'>(m.substrate_densities.get(), bz_.get(), cz_.get(), ez_.get(), dens_l, substrate_factor_);
+
+		dirichlet_solver::solve_3d(m);
 	}
-
-	dirichlet_solver::solve_3d(m);
-
-	// swipe y
-	for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
-	{
-		solve_slice_yz<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(), dens_l ^ noarr::fix<'z'>(z),
-							substrate_factor_);
-	}
-	dirichlet_solver::solve_3d(m);
-
-	// swipe z
-	solve_slice_yz<'z'>(m.substrate_densities.get(), bz_.get(), cz_.get(), ez_.get(), dens_l, substrate_factor_);
-
-	dirichlet_solver::solve_3d(m);
 }
