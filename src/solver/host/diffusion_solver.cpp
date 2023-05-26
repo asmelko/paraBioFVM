@@ -278,10 +278,10 @@ void diffusion_solver::solve_3d(microenvironment& m)
 
 		// swipe z
 #pragma omp for
-		for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
 		{
 			solve_slice_yz<'z'>(m.substrate_densities.get(), bz_.get(), cz_.get(), ez_.get(),
-								dens_l ^ noarr::fix<'z'>(z), substrate_factor_);
+								dens_l ^ noarr::fix<'y'>(y), substrate_factor_);
 		}
 
 		dirichlet_solver::solve_3d(m);
