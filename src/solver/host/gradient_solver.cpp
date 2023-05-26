@@ -100,6 +100,7 @@ void solve_z(real_t* __restrict__ gradients, real_t* __restrict__ densities, ind
 	auto grad_l2 = grad_l ^ noarr::merge_blocks<'x', 's', 'X'>();
 	auto dens_l2 = dens_l ^ noarr::merge_blocks<'x', 's', 'X'>();
 
+#pragma omp parallel for
 	for (index_t y = 0; y < y_dim; y++)
 	{
 		for (index_t x = 0; x < x_dim * s_dim; x++)
@@ -111,6 +112,7 @@ void solve_z(real_t* __restrict__ gradients, real_t* __restrict__ densities, ind
 		}
 	}
 
+#pragma omp parallel for
 	for (index_t z = 1; z < z_dim - 1; z++)
 	{
 		for (index_t y = 0; y < y_dim; y++)
@@ -125,6 +127,7 @@ void solve_z(real_t* __restrict__ gradients, real_t* __restrict__ densities, ind
 		}
 	}
 
+#pragma omp parallel for
 	for (index_t y = 0; y < y_dim; y++)
 	{
 		for (index_t x = 0; x < x_dim * s_dim; x++)
