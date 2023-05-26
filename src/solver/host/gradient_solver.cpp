@@ -148,7 +148,7 @@ void solve_3d_internal(real_t* __restrict__ gradients, real_t* __restrict__ dens
 	{
 		if (omp_get_team_num() == 0)
 		{
-#pragma omp loop
+#pragma omp parallel for
 			for (index_t z = 0; z < z_dim; z++)
 			{
 				for (index_t y = 0; y < y_dim; y++)
@@ -161,7 +161,7 @@ void solve_3d_internal(real_t* __restrict__ gradients, real_t* __restrict__ dens
 
 		if (omp_get_team_num() == 1)
 		{
-#pragma omp loop
+#pragma omp parallel for
 			for (index_t z = 0; z < z_dim; z++)
 			{
 				solve_y(gradients, densities, voxel_shape[1], dens_l ^ noarr::fix<'z'>(z),
