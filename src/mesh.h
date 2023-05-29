@@ -16,4 +16,5 @@ struct cartesian_mesh
 				   point_t<index_t, 3> voxel_shape);
 
 	std::size_t voxel_count() const;
+	index_t voxel_volume() const;
 };

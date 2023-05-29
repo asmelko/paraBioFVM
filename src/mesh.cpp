@@ -18,9 +18,20 @@ cartesian_mesh::cartesian_mesh(index_t dims, point_t<index_t, 3> bounding_box_mi
 	{
 		grid_shape[2] = (bounding_box_maxs[2] - bounding_box_mins[2]) / voxel_shape[2];
 	}
+
+	if (dims < 3)
+	{
+		voxel_shape[2] = 1;
+	}
+	if (dims < 2)
+	{
+		voxel_shape[1] = 1;
+	}
 }
 
 std::size_t cartesian_mesh::voxel_count() const
 {
 	return (std::size_t)grid_shape[0] * (std::size_t)grid_shape[1] * (std::size_t)grid_shape[2];
 }
+
+index_t cartesian_mesh::voxel_volume() const { return voxel_shape[0] * voxel_shape[1] * voxel_shape[2]; }
