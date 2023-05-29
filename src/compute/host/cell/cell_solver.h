@@ -18,9 +18,17 @@ v = voxel_volume
 
 D = (D + (c/v)*dt*S*T)/(1 + (c/v)*dt*(U+S)) + (1/v)*dt*N
 I = I - ((-c*dt*(U+S)*D + c*dt*S*T)/(1 + c*dt*(U+S)) + dt*N)
+
+Also handles release of internalized substrates:
+
+F = fraction released at death
+
+D = D + I*F/v
 */
 
 class cell_solver
 {
-	static void solve(agent_data& data);
+	static void simulate_secretion_and_uptake(agent_data& data);
+
+	static void release_internalized_substrates(agent_data& data, index_t index);
 };
