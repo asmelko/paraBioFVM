@@ -17,4 +17,6 @@ struct cartesian_mesh
 
 	std::size_t voxel_count() const;
 	index_t voxel_volume() const;
+
+	point_t<index_t, 3> voxel_position(point_t<real_t, 3> position) const;
 };

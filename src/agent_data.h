@@ -21,7 +21,7 @@ public:
 	std::vector<real_t> fraction_transferred_when_ingested;
 
     std::vector<real_t> volumes;
-    std::vector<index_t> positions;
+    std::vector<real_t> positions;
 
 	std::vector<agent_id_t> agents;
 

@@ -4,14 +4,26 @@
 #include "../../../traits.h"
 
 template <index_t dims>
-auto fix_dims(const index_t* voxel_index)
+auto fix_dims(const real_t* cell_position, const cartesian_mesh& m)
 {
 	if constexpr (dims == 1)
+	{
+		point_t<real_t, 3> pos = { cell_position[0], 0, 0 };
+		point_t<index_t, 3> voxel_index = m.voxel_position(pos);
 		return noarr::fix<'x'>(voxel_index[0]);
+	}
 	else if constexpr (dims == 2)
+	{
+		point_t<real_t, 3> pos = { cell_position[0], cell_position[1], 0 };
+		point_t<index_t, 3> voxel_index = m.voxel_position(pos);
 		return noarr::fix<'x'>(voxel_index[0]) ^ noarr::fix<'y'>(voxel_index[1]);
+	}
 	else if constexpr (dims == 3)
+	{
+		point_t<real_t, 3> pos = { cell_position[0], cell_position[1], cell_position[2] };
+		point_t<index_t, 3> voxel_index = m.voxel_position(pos);
 		return noarr::fix<'x'>(voxel_index[0]) ^ noarr::fix<'y'>(voxel_index[1]) ^ noarr::fix<'z'>(voxel_index[2]);
+	}
 }
 
 template <typename density_layout_t>
@@ -55,7 +67,7 @@ void solve_dim(agent_data& data)
 					   data.uptake_rates.data() + i * data.m.substrates_count,
 					   data.saturation_densities.data() + i * data.m.substrates_count,
 					   data.net_export_rates.data() + i * data.m.substrates_count, data.volumes[i], voxel_volume,
-					   data.m.time_step, dens_l ^ fix_dims<dims>(data.positions.data() + i * dims));
+					   data.m.time_step, dens_l ^ fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh));
 	}
 }
 

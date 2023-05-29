@@ -35,3 +35,10 @@ std::size_t cartesian_mesh::voxel_count() const
 }
 
 index_t cartesian_mesh::voxel_volume() const { return voxel_shape[0] * voxel_shape[1] * voxel_shape[2]; }
+
+point_t<index_t, 3> cartesian_mesh::voxel_position(point_t<real_t, 3> position) const
+{
+	return { (index_t)((position[0] - bounding_box_mins[0]) / voxel_shape[0]),
+			 (index_t)((position[1] - bounding_box_mins[1]) / voxel_shape[1]),
+			 (index_t)((position[2] - bounding_box_mins[2]) / voxel_shape[2]) };
+}
