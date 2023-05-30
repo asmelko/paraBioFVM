@@ -6,10 +6,10 @@
 
 int main()
 {
-	cartesian_mesh mesh(3, { 0, 0, 0 }, { 4000, 4000, 4000 }, { 20, 20, 20 });
+	cartesian_mesh mesh(3, { 0, 0, 0 }, { 5000, 5000, 5000 }, { 20, 20, 20 });
 
 	real_t diffusion_time_step = 5;
-	index_t substrates_count = 2;
+	index_t substrates_count = 4;
 
 	auto diff_coefs = std::make_unique<real_t[]>(substrates_count);
 	diff_coefs[0] = 4;
@@ -19,8 +19,10 @@ int main()
 	auto initial_conds = std::make_unique<real_t[]>(substrates_count);
 	initial_conds[0] = 0;
 
-	microenvironment m(mesh, substrates_count, diffusion_time_step, std::move(diff_coefs), std::move(decay_rates),
-					   std::move(initial_conds));
+	microenvironment m(mesh, substrates_count, diffusion_time_step, initial_conds.get());
+
+	m.diffustion_coefficients = std::move(diff_coefs);
+	m.decay_rates = std::move(decay_rates);
 
 	diffusion_solver s;
 
@@ -53,7 +55,9 @@ int main()
 				  << std::endl;
 	}
 
-	s.solve(m);
-
-	gradient_solver::solve(m);
+	for (int i = 0; i < 5; i++)
+	{
+		s.solve(m);
+		gradient_solver::solve(m);
+	}
 }

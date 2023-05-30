@@ -28,7 +28,7 @@ d_i'' == (d_i' - c_i*d_(i+1)'')*b_i'                          n >  i >= 1
 Optimizations:
 - The memory accesses of all dimension slices are continuous for the least amount of cache misses. This is done by
 reordering the loops for the thomas solver of y and z axes.
-- Better factorization for small enough number of substrates. Since compiler generated vectorization is done over the
+- Better vectorization for small enough number of substrates. Since compiler generated vectorization is done over the
 substrates, when we have 1 or 2 substrates, vector capability is not used to the full. We can make it better for y and z
 axes by merging loops over substrates (s) and x dimension. When we merge these loops, the vectorization can be done over
 the whole 'plane' s*x rather than just s. For it to work properly, helper vectors b, c, e had to be modified such that

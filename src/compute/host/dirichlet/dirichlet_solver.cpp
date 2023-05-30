@@ -1,5 +1,7 @@
 #include "dirichlet_solver.h"
 
+#include <noarr/structures/extra/traverser.hpp>
+
 #include "../../../traits.h"
 
 template <index_t dims>
@@ -14,7 +16,7 @@ auto fix_dims(const index_t* voxel_index)
 }
 
 template <index_t dims>
-void solve_internal(real_t* __restrict__ substrate_densities, const index_t* __restrict__ dirichlet_voxels,
+void solve_interior(real_t* __restrict__ substrate_densities, const index_t* __restrict__ dirichlet_voxels,
 					const real_t* __restrict__ dirichlet_values, const bool* __restrict__ dirichlet_conditions,
 					index_t substrates_count, index_t dirichlet_voxels_count, const point_t<index_t, 3>& grid_shape)
 {
@@ -36,36 +38,102 @@ void solve_internal(real_t* __restrict__ substrate_densities, const index_t* __r
 	}
 }
 
+template <typename density_layout_t>
+void solve_boundary(real_t* __restrict__ substrate_densities, const real_t* __restrict__ dirichlet_values,
+					const bool* __restrict__ dirichlet_conditions, const density_layout_t dens_l)
+{
+	if (dirichlet_values == nullptr)
+		return;
+
+	noarr::traverser(dens_l).for_each([&](auto state) {
+		auto s = noarr::get_index<'s'>(state);
+
+		if (dirichlet_conditions[s])
+			(dens_l | noarr::get_at(substrate_densities, state)) = dirichlet_values[s];
+	});
+}
+
+template <index_t dims>
+void solve_boundaries(microenvironment& m);
+
+template <>
+void solve_boundaries<1>(microenvironment& m)
+{
+	auto dens_l = layout_traits<1>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
+
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_min_boundary_values[0].get(),
+				   m.dirichlet_min_boundary_conditions[0].get(), dens_l ^ noarr::fix<'x'>(0));
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_max_boundary_values[0].get(),
+				   m.dirichlet_max_boundary_conditions[0].get(), dens_l ^ noarr::fix<'x'>(m.mesh.grid_shape[0] - 1));
+}
+
+template <>
+void solve_boundaries<2>(microenvironment& m)
+{
+	auto dens_l = layout_traits<2>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
+
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_min_boundary_values[0].get(),
+				   m.dirichlet_min_boundary_conditions[0].get(), dens_l ^ noarr::fix<'x'>(0));
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_max_boundary_values[0].get(),
+				   m.dirichlet_max_boundary_conditions[0].get(), dens_l ^ noarr::fix<'x'>(m.mesh.grid_shape[0] - 1));
+
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_min_boundary_values[1].get(),
+				   m.dirichlet_min_boundary_conditions[1].get(), dens_l ^ noarr::fix<'y'>(0));
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_max_boundary_values[1].get(),
+				   m.dirichlet_max_boundary_conditions[1].get(), dens_l ^ noarr::fix<'y'>(m.mesh.grid_shape[1] - 1));
+}
+
+template <>
+void solve_boundaries<3>(microenvironment& m)
+{
+	auto dens_l = layout_traits<3>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
+
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_min_boundary_values[0].get(),
+				   m.dirichlet_min_boundary_conditions[0].get(), dens_l ^ noarr::fix<'x'>(noarr::lit<0>));
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_max_boundary_values[0].get(),
+				   m.dirichlet_max_boundary_conditions[0].get(), dens_l ^ noarr::fix<'x'>(m.mesh.grid_shape[0] - 1));
+
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_min_boundary_values[1].get(),
+				   m.dirichlet_min_boundary_conditions[1].get(), dens_l ^ noarr::fix<'y'>(noarr::lit<0>));
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_max_boundary_values[1].get(),
+				   m.dirichlet_max_boundary_conditions[1].get(), dens_l ^ noarr::fix<'y'>(m.mesh.grid_shape[1] - 1));
+
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_min_boundary_values[2].get(),
+				   m.dirichlet_min_boundary_conditions[2].get(), dens_l ^ noarr::fix<'z'>(noarr::lit<0>));
+	solve_boundary(m.substrate_densities.get(), m.dirichlet_max_boundary_values[2].get(),
+				   m.dirichlet_max_boundary_conditions[2].get(), dens_l ^ noarr::fix<'z'>(m.mesh.grid_shape[2] - 1));
+}
+
 void dirichlet_solver::solve(microenvironment& m)
 {
 	if (m.mesh.dims == 1)
-		solve_internal<1>(m.substrate_densities.get(), m.dirichlet_voxels.get(), m.dirichlet_values.get(),
-						  m.dirichlet_conditions.get(), m.substrates_count, m.dirichlet_voxels_count,
-						  m.mesh.grid_shape);
+		solve_1d(m);
 	else if (m.mesh.dims == 2)
-		solve_internal<2>(m.substrate_densities.get(), m.dirichlet_voxels.get(), m.dirichlet_values.get(),
-						  m.dirichlet_conditions.get(), m.substrates_count, m.dirichlet_voxels_count,
-						  m.mesh.grid_shape);
+		solve_2d(m);
 	else if (m.mesh.dims == 3)
-		solve_internal<3>(m.substrate_densities.get(), m.dirichlet_voxels.get(), m.dirichlet_values.get(),
-						  m.dirichlet_conditions.get(), m.substrates_count, m.dirichlet_voxels_count,
-						  m.mesh.grid_shape);
+		solve_3d(m);
 }
 
 void dirichlet_solver::solve_1d(microenvironment& m)
 {
-	solve_internal<1>(m.substrate_densities.get(), m.dirichlet_voxels.get(), m.dirichlet_values.get(),
-					  m.dirichlet_conditions.get(), m.substrates_count, m.dirichlet_voxels_count, m.mesh.grid_shape);
+	solve_interior<1>(m.substrate_densities.get(), m.dirichlet_interior_voxels.get(), m.dirichlet_interior_values.get(),
+					  m.dirichlet_interior_conditions.get(), m.substrates_count, m.dirichlet_interior_voxels_count,
+					  m.mesh.grid_shape);
+	solve_boundaries<1>(m);
 }
 
 void dirichlet_solver::solve_2d(microenvironment& m)
 {
-	solve_internal<2>(m.substrate_densities.get(), m.dirichlet_voxels.get(), m.dirichlet_values.get(),
-					  m.dirichlet_conditions.get(), m.substrates_count, m.dirichlet_voxels_count, m.mesh.grid_shape);
+	solve_interior<2>(m.substrate_densities.get(), m.dirichlet_interior_voxels.get(), m.dirichlet_interior_values.get(),
+					  m.dirichlet_interior_conditions.get(), m.substrates_count, m.dirichlet_interior_voxels_count,
+					  m.mesh.grid_shape);
+	solve_boundaries<2>(m);
 }
 
 void dirichlet_solver::solve_3d(microenvironment& m)
 {
-	solve_internal<3>(m.substrate_densities.get(), m.dirichlet_voxels.get(), m.dirichlet_values.get(),
-					  m.dirichlet_conditions.get(), m.substrates_count, m.dirichlet_voxels_count, m.mesh.grid_shape);
+	solve_interior<3>(m.substrate_densities.get(), m.dirichlet_interior_voxels.get(), m.dirichlet_interior_values.get(),
+					  m.dirichlet_interior_conditions.get(), m.substrates_count, m.dirichlet_interior_voxels_count,
+					  m.mesh.grid_shape);
+	solve_boundaries<3>(m);
 }

@@ -18,25 +18,27 @@ void initialize_substrate_densities(real_t* substrate_densities, const real_t* i
 }
 
 microenvironment::microenvironment(cartesian_mesh mesh, index_t substrates_count, real_t time_step,
-								   std::unique_ptr<real_t[]> diffustion_coefficients,
-								   std::unique_ptr<real_t[]> decay_rates, std::unique_ptr<real_t[]> initial_conditions)
+								   const real_t* initial_conditions)
 	: mesh(mesh),
 	  substrates_count(substrates_count),
 	  time_step(time_step),
 	  substrate_densities(std::make_unique<real_t[]>(substrates_count * mesh.voxel_count())),
-	  diffustion_coefficients(std::move(diffustion_coefficients)),
-	  decay_rates(std::move(decay_rates)),
-	  initial_conditions(std::move(initial_conditions)),
+	  diffustion_coefficients(nullptr),
+	  decay_rates(nullptr),
 	  gradients(std::make_unique<real_t[]>(mesh.dims * substrates_count * mesh.voxel_count())),
-	  dirichlet_voxels_count(0),
-	  dirichlet_voxels(nullptr),
-	  dirichlet_values(nullptr),
-	  dirichlet_conditions(nullptr)
+	  dirichlet_interior_voxels_count(0),
+	  dirichlet_interior_voxels(nullptr),
+	  dirichlet_interior_values(nullptr),
+	  dirichlet_interior_conditions(nullptr),
+	  dirichlet_min_boundary_values({ nullptr, nullptr, nullptr }),
+	  dirichlet_max_boundary_values({ nullptr, nullptr, nullptr }),
+	  dirichlet_min_boundary_conditions({ nullptr, nullptr, nullptr }),
+	  dirichlet_max_boundary_conditions({ nullptr, nullptr, nullptr })
 {
 	if (mesh.dims == 1)
-		initialize_substrate_densities<1>(substrate_densities.get(), this->initial_conditions.get(), *this);
+		initialize_substrate_densities<1>(substrate_densities.get(), initial_conditions, *this);
 	else if (mesh.dims == 2)
-		initialize_substrate_densities<2>(substrate_densities.get(), this->initial_conditions.get(), *this);
+		initialize_substrate_densities<2>(substrate_densities.get(), initial_conditions, *this);
 	else if (mesh.dims == 3)
-		initialize_substrate_densities<3>(substrate_densities.get(), this->initial_conditions.get(), *this);
+		initialize_substrate_densities<3>(substrate_densities.get(), initial_conditions, *this);
 }
