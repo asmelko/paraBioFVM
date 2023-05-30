@@ -2,6 +2,8 @@
 
 #include <noarr/structures_extended.hpp>
 
+#include "types.h"
+
 template <index_t dims>
 struct layout_traits
 {};

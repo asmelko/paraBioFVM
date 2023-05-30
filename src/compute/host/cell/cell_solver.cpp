@@ -60,7 +60,7 @@ void simulate_dim(agent_data& data)
 	index_t voxel_volume = data.m.mesh.voxel_volume(); // expecting that voxel volume is the same for all voxels
 	auto dens_l = layout_traits<dims>::construct_density_layout(data.m.substrates_count, data.m.mesh.grid_shape);
 
-	for (std::size_t i = 0; i < data.agents.size(); i++)
+	for (index_t i = 0; i < data.agents_count; i++)
 	{
 		simulate_internal(data.m.substrate_densities.get(),
 						  data.internalized_substrates.data() + i * data.m.substrates_count,
