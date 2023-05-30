@@ -4,6 +4,7 @@
 #include <noarr/structures/interop/bag.hpp>
 
 #include "compute/host/diffusion/diffusion_solver.h"
+#include "compute/host/dirichlet/dirichlet_solver.h"
 #include "compute/host/gradient/gradient_solver.h"
 #include "traits.h"
 #include "utils.h"
@@ -620,4 +621,147 @@ TEST(host_gradient_solver, D3)
 				EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x', 'y', 'z'>(2, 1, x, y, z)),
 								(get_dens(x, y, z_up, 1) - get_dens(x, y, z_down, 1)) / z_div);
 			}
+}
+
+TEST(host_dirichlet_solver, boundaries_D1)
+{
+	cartesian_mesh mesh(1, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	add_boundary_dirichlet(m, substrates_count, 0, true, 4);
+	add_boundary_dirichlet(m, substrates_count, 0, false, 5);
+
+	dirichlet_solver::solve(m);
+
+	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+	{
+		if (x == 0)
+			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 0)), 4);
+		else if (x == m.mesh.grid_shape[0] - 1)
+			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 0)), 5);
+		else
+			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 0)), 1);
+
+		EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 1)), 1);
+	}
+}
+
+TEST(host_dirichlet_solver, boundaries_D2)
+{
+	cartesian_mesh mesh(2, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	add_boundary_dirichlet(m, substrates_count, 0, true, 4);
+	add_boundary_dirichlet(m, substrates_count, 0, false, 5);
+	add_boundary_dirichlet(m, substrates_count, 1, true, 6);
+	add_boundary_dirichlet(m, substrates_count, 1, false, 7);
+
+	dirichlet_solver::solve(m);
+
+	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+		{
+			// y boundary overwrites x boundary
+			if (x == 0 && y == 0)
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 6);
+			else if (x == 0 && y == m.mesh.grid_shape[1] - 1)
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 7);
+			else if (x == m.mesh.grid_shape[0] - 1 && y == 0)
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 6);
+			else if (x == m.mesh.grid_shape[0] - 1 && y == m.mesh.grid_shape[1] - 1)
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 7);
+
+			// x boundary
+			else if (x == 0)
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 4);
+			else if (x == m.mesh.grid_shape[0] - 1)
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 5);
+
+			// y boundary
+			else if (y == 0)
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 6);
+			else if (y == m.mesh.grid_shape[1] - 1)
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 7);
+
+			// interior
+			else
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 0)), 1);
+
+			EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(x, y, 1)), 1);
+		}
+}
+
+TEST(host_dirichlet_solver, boundaries_D3)
+{
+	cartesian_mesh mesh(3, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	add_boundary_dirichlet(m, substrates_count, 0, true, 4);
+	add_boundary_dirichlet(m, substrates_count, 0, false, 5);
+	add_boundary_dirichlet(m, substrates_count, 1, true, 6);
+	add_boundary_dirichlet(m, substrates_count, 1, false, 7);
+	add_boundary_dirichlet(m, substrates_count, 2, true, 8);
+	add_boundary_dirichlet(m, substrates_count, 2, false, 9);
+
+	dirichlet_solver::solve(m);
+
+	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	// with only interior z indices
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+			for (index_t z = 1; z < m.mesh.grid_shape[2] - 1; z++)
+			{
+				// y boundary overwrites x boundary
+				if (x == 0 && y == 0)
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 6);
+				else if (x == 0 && y == m.mesh.grid_shape[1] - 1)
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 7);
+				else if (x == m.mesh.grid_shape[0] - 1 && y == 0)
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 6);
+				else if (x == m.mesh.grid_shape[0] - 1 && y == m.mesh.grid_shape[1] - 1)
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 7);
+
+				// x boundary
+				else if (x == 0)
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 4);
+				else if (x == m.mesh.grid_shape[0] - 1)
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 5);
+
+				// y boundary
+				else if (y == 0)
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 6);
+				else if (y == m.mesh.grid_shape[1] - 1)
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 7);
+
+				// interior
+				else
+					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 1);
+
+				EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 1)), 1);
+			}
+
+	// with exterior z indices
+	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
+		{
+			EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, 0, 0)), 8);
+			EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, m.mesh.grid_shape[2] - 1, 0)), 9);
+		}
 }

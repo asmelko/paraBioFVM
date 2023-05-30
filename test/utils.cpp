@@ -42,7 +42,7 @@ microenvironment biorobots_microenv(cartesian_mesh mesh)
 	microenvironment m(mesh, substrates_count, diffusion_time_step, initial_conds.get());
 	m.diffustion_coefficients = std::move(diff_coefs);
 	m.decay_rates = std::move(decay_rates);
-	
+
 	return m;
 }
 
@@ -64,4 +64,27 @@ void add_dirichlet_at(microenvironment& m, index_t substrates_count, const std::
 		m.dirichlet_interior_values[i * substrates_count] = values[i];
 		m.dirichlet_interior_conditions[i * substrates_count] = true; // only the first substrate
 	}
+}
+
+void add_boundary_dirichlet(microenvironment& m, index_t substrates_count, index_t dim_idx, bool min, real_t value)
+{
+	auto& values = min ? m.dirichlet_min_boundary_values[dim_idx] : m.dirichlet_max_boundary_values[dim_idx];
+	auto& conditions =
+		min ? m.dirichlet_min_boundary_conditions[dim_idx] : m.dirichlet_max_boundary_conditions[dim_idx];
+
+	if (!values)
+	{
+		values = std::make_unique<real_t[]>(substrates_count);
+		conditions = std::make_unique<bool[]>(substrates_count);
+
+		for (index_t s = 0; s < substrates_count; s++)
+		{
+			values[s] = 42;
+			conditions[s] = false;
+		}
+	}
+
+	// only the first substrate
+	values[0] = value;
+	conditions[0] = true;
 }
