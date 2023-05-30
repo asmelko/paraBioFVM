@@ -83,7 +83,7 @@ void cell_solver::simulate_secretion_and_uptake(agent_data& data)
 }
 
 template <typename density_layout_t>
-void release_internal(real_t* __restrict__ substrate_densities, const real_t* __restrict__ internalized_substrates,
+void release_internal(real_t* __restrict__ substrate_densities, real_t* __restrict__ internalized_substrates,
 					  const real_t* __restrict__ fraction_released_at_death, real_t voxel_volume,
 					  density_layout_t dens_l)
 {
@@ -93,6 +93,8 @@ void release_internal(real_t* __restrict__ substrate_densities, const real_t* __
 	{
 		(dens_l | noarr::get_at<'s'>(substrate_densities, s)) +=
 			internalized_substrates[s] * fraction_released_at_death[s] / voxel_volume;
+
+		internalized_substrates[s] = 0;
 	}
 }
 
