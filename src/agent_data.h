@@ -6,7 +6,7 @@
 
 using agent_id_t = uint32_t;
 
-class microenvironment;
+struct microenvironment;
 
 struct agent_data
 {
