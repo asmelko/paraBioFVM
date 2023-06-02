@@ -1,11 +1,12 @@
 #pragma once
 
+#include <memory>
+
 #include "../../../agent_data.h"
 
 /*
 Performs secretion and uptake of cells.
 Updates substrate denisities of the cell's voxel and conditionally updates the cell's internalized substrates.
-For each cell, the following is performed:
 
 D = substrate densities
 I = internalized substrates
@@ -16,8 +17,14 @@ N = net export rates
 c = cell_volume
 v = voxel_volume
 
-D = (D + (c/v)*dt*S*T)/(1 + (c/v)*dt*(U+S)) + (1/v)*dt*N
-I = I - ((-c*dt*(U+S)*D + c*dt*S*T)/(1 + c*dt*(U+S)) + dt*N)
+I -= v((-(c/v)*dt*(U+S)*D + (c/v)*dt*S*T) / (1 + (c/v)*dt*(U+S)) + (1/v)dt*N)
+
+Updating substrate densities is more complex, one has to take care about the case when we have more cells in the same
+voxel. The following formula is used:
+
+D = (D + sum_k{(c_k/v)*dt*S_k*T_k}) / (1 + sum_k{(c_k/v)*dt*(U_k+S_k)}) + sum_k{(1/v)*dt*N_k}
+
+where sum is over all cells in the voxel.
 
 Also handles release of internalized substrates:
 
@@ -28,7 +35,21 @@ D = D + I*F/v
 
 class cell_solver
 {
-	static void simulate_secretion_and_uptake(agent_data& data);
+	bool compute_internalized_substrates_;
 
-	static void release_internalized_substrates(agent_data& data, index_t index);
+	std::vector<real_t> numerators_;
+	std::vector<real_t> denominators_;
+
+	std::unique_ptr<index_t[]> ballots_;
+
+	void resize(const agent_data& data);
+
+public:
+	void initialize(agent_data& data, bool compute_internalized_substrates);
+
+	void simulate_secretion_and_uptake(agent_data& data, bool recompute);
+
+	void release_internalized_substrates(agent_data& data, index_t index);
+
+	void precompute(agent_data& data);
 };

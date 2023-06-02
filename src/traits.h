@@ -11,6 +11,10 @@ struct layout_traits
 template <>
 struct layout_traits<1>
 {
+	using grid_layout_t = decltype(noarr::vector<'x'>());
+
+	static auto set_grid_lengths(const point_t<index_t, 3>& grid_dims) { return noarr::set_length<'x'>(grid_dims[0]); }
+
 	using density_layout_t = decltype(noarr::scalar<real_t>() ^ noarr::vector<'s'>() ^ noarr::vector<'x'>());
 
 	static auto construct_density_layout(index_t substrates_count, const point_t<index_t, 3>& grid_dims)
@@ -30,6 +34,13 @@ struct layout_traits<1>
 template <>
 struct layout_traits<2>
 {
+	using grid_layout_t = decltype(noarr::vector<'x'>() ^ noarr::vector<'y'>());
+
+	static auto set_grid_lengths(const point_t<index_t, 3>& grid_dims)
+	{
+		return noarr::set_length<'x'>(grid_dims[0]) ^ noarr::set_length<'y'>(grid_dims[1]);
+	}
+
 	using density_layout_t =
 		decltype(noarr::scalar<real_t>() ^ noarr::vector<'s'>() ^ noarr::vector<'x'>() ^ noarr::vector<'y'>());
 
@@ -52,6 +63,14 @@ struct layout_traits<2>
 template <>
 struct layout_traits<3>
 {
+	using grid_layout_t = decltype(noarr::vector<'x'>() ^ noarr::vector<'y'>() ^ noarr::vector<'z'>());
+
+	static auto set_grid_lengths(const point_t<index_t, 3>& grid_dims)
+	{
+		return noarr::set_length<'x'>(grid_dims[0]) ^ noarr::set_length<'y'>(grid_dims[1])
+			   ^ noarr::set_length<'z'>(grid_dims[2]);
+	}
+
 	using density_layout_t = decltype(noarr::scalar<real_t>() ^ noarr::vector<'s'>() ^ noarr::vector<'x'>()
 									  ^ noarr::vector<'y'>() ^ noarr::vector<'z'>());
 
