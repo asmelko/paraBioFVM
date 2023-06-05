@@ -3,6 +3,7 @@
 #include <noarr/structures/extra/traverser.hpp>
 #include <noarr/structures/interop/bag.hpp>
 
+#include "compute/host/cell/cell_solver.h"
 #include "compute/host/diffusion/diffusion_solver.h"
 #include "compute/host/dirichlet/dirichlet_solver.h"
 #include "compute/host/gradient/gradient_solver.h"
@@ -764,4 +765,228 @@ TEST(host_dirichlet_solver, boundaries_D3)
 			EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, 0, 0)), 8);
 			EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, m.mesh.grid_shape[2] - 1, 0)), 9);
 		}
+}
+
+void set_default_agent_values(agent* a, index_t rates_offset, index_t volume, point_t<real_t, 3> position, index_t dims)
+{
+	a->secretion_rates()[0] = rates_offset + 100;
+	a->secretion_rates()[1] = 0;
+
+	a->uptake_rates()[0] = rates_offset + 200;
+	a->uptake_rates()[1] = 0;
+
+	a->saturation_densities()[0] = rates_offset + 300;
+	a->saturation_densities()[1] = 0;
+
+	a->net_export_rates()[0] = rates_offset + 400;
+	a->net_export_rates()[1] = 0;
+
+	a->volume() = volume;
+
+	for (index_t i = 0; i < dims; ++i)
+		a->position()[i] = position[i];
+}
+
+
+class host_agents : public testing::TestWithParam<bool>
+{};
+
+INSTANTIATE_TEST_SUITE_P(recompute, host_agents, testing::Values(true, false));
+
+TEST_P(host_agents, simple_D1)
+{
+	cartesian_mesh mesh(1, { 0, 0, 0 }, { 60, 20, 20 }, { 20, 20, 20 });
+
+	auto m = default_microenv(mesh);
+	m.time_step = 0.01;
+
+	index_t substrates_count = 2;
+
+	auto a1 = m.agents.add_agent();
+	auto a2 = m.agents.add_agent();
+	auto a3 = m.agents.add_agent();
+
+	set_default_agent_values(a1, 0, 1000, { 10, 0, 0 }, 1);
+	set_default_agent_values(a2, 400, 1000, { 30, 0, 0 }, 1);
+	set_default_agent_values(a3, 800, 1000, { 50, 0, 0 }, 1);
+
+	cell_solver s;
+
+	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	s.initialize(m, true);
+
+	s.simulate_secretion_and_uptake(m, true);
+
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[0], -216004.000000);
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[0], -1469060.631579);
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[0], -2927715.703704);
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(0, 0)), 28.000500);
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(0, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(1, 0)), 184.632579);
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(1, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 0)), 366.964463);
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 1)), 1);
+
+	s.simulate_secretion_and_uptake(m, GetParam());
+
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[0], -216004.000000 + -157093.818182);
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[0], -1469060.631579 + -618551.844632);
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[0], -2927715.703704 + -867471.319407);
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(0, 0)), 47.637227);
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(0, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(1, 0)), 261.951560);
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(1, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 0)), 475.398378);
+	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 1)), 1);
+}
+
+TEST_P(host_agents, simple_D2)
+{
+	cartesian_mesh mesh(2, { 0, 0, 0 }, { 60, 60, 20 }, { 20, 20, 20 });
+
+	auto m = default_microenv(mesh);
+	m.time_step = 0.01;
+
+	index_t substrates_count = 2;
+
+	auto a1 = m.agents.add_agent();
+	auto a2 = m.agents.add_agent();
+	auto a3 = m.agents.add_agent();
+
+	set_default_agent_values(a1, 0, 1000, { 10, 10, 0 }, 2);
+	set_default_agent_values(a2, 400, 1000, { 30, 30, 0 }, 2);
+	set_default_agent_values(a3, 800, 1000, { 50, 50, 0 }, 2);
+
+	cell_solver s;
+
+	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	s.initialize(m, true);
+
+	s.simulate_secretion_and_uptake(m, true);
+
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[0], -216004.000000);
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[0], -1469060.631579);
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[0], -2927715.703704);
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(0, 0, 0)), 28.000500);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(0, 0, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(1, 1, 0)), 184.632579);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(1, 1, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(2, 2, 0)), 366.964463);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(2, 2, 1)), 1);
+
+	s.simulate_secretion_and_uptake(m, GetParam());
+
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[0], -216004.000000 + -157093.818182);
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[0], -1469060.631579 + -618551.844632);
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[0], -2927715.703704 + -867471.319407);
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(0, 0, 0)), 47.637227);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(0, 0, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(1, 1, 0)), 261.951560);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(1, 1, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(2, 2, 0)), 475.398378);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(2, 2, 1)), 1);
+}
+
+TEST_P(host_agents, simple_D3)
+{
+	cartesian_mesh mesh(3, { 0, 0, 0 }, { 60, 60, 60 }, { 20, 20, 20 });
+
+	auto m = default_microenv(mesh);
+	m.time_step = 0.01;
+
+	index_t substrates_count = 2;
+
+	auto a1 = m.agents.add_agent();
+	auto a2 = m.agents.add_agent();
+	auto a3 = m.agents.add_agent();
+
+	set_default_agent_values(a1, 0, 1000, { 10, 10, 10 }, 3);
+	set_default_agent_values(a2, 400, 1000, { 30, 30, 30 }, 3);
+	set_default_agent_values(a3, 800, 1000, { 50, 50, 50 }, 3);
+
+	cell_solver s;
+
+	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	s.initialize(m, true);
+
+	s.simulate_secretion_and_uptake(m, true);
+
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[0], -216004.000000);
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[0], -1469060.631579);
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[0], -2927715.703704);
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 0, 0)), 28.000500);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 0, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 1, 1, 0)), 184.632579);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 1, 1, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(2, 2, 2, 0)), 366.964463);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(2, 2, 2, 1)), 1);
+
+	s.simulate_secretion_and_uptake(m, GetParam());
+
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[0], -216004.000000 + -157093.818182);
+	EXPECT_FLOAT_EQ(a1->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[0], -1469060.631579 + -618551.844632);
+	EXPECT_FLOAT_EQ(a2->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[0], -2927715.703704 + -867471.319407);
+	EXPECT_FLOAT_EQ(a3->internalized_substrates()[1], 0);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 0, 0)), 47.637227);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 0, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 1, 1, 0)), 261.951560);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 1, 1, 1)), 1);
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(2, 2, 2, 0)), 475.398378);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(2, 2, 2, 1)), 1);
 }

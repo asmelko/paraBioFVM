@@ -37,7 +37,7 @@ void clear_ballots(const real_t* __restrict__ cell_positions, index_t* __restric
 
 	for (index_t i = 0; i < n; i++)
 	{
-		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * n, m);
+		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * i, m);
 
 		index_t& b = b_l | noarr::get_at(ballots);
 
@@ -50,13 +50,18 @@ void compute_intermediates(real_t* __restrict__ numerators, real_t* __restrict__
 						   const real_t* __restrict__ saturation_densities, const real_t* __restrict__ cell_volumes,
 						   real_t voxel_volume, real_t time_step, index_t n, index_t substrates_count)
 {
-	for (index_t i = 0; i < n * substrates_count; i++) // TODO: vectorizable by removing cell_volumes
+	for (index_t i = 0; i < n; i++)
 	{
-		numerators[i] = secretion_rates[i] * saturation_densities[i] * time_step * cell_volumes[i / substrates_count]
-						/ voxel_volume;
+		for (index_t s = 0; s < substrates_count; s++)
+		{
+			numerators[i * substrates_count + s] = secretion_rates[i * substrates_count + s]
+												   * saturation_densities[i * substrates_count + s] * time_step
+												   * cell_volumes[i] / voxel_volume;
 
-		denominators[i] =
-			(uptake_rates[i] + secretion_rates[i]) * time_step * cell_volumes[i / substrates_count] / voxel_volume;
+			denominators[i * substrates_count + s] =
+				(uptake_rates[i * substrates_count + s] + secretion_rates[i * substrates_count + s]) * time_step
+				* cell_volumes[i] / voxel_volume;
+		}
 	}
 }
 
@@ -70,7 +75,7 @@ void ballot_and_sum(real_t* __restrict__ numerators, real_t* __restrict__ denomi
 
 	for (index_t i = 0; i < n; i++)
 	{
-		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * n, m);
+		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * i, m);
 
 		index_t& b = b_l | noarr::get_at(ballots);
 
@@ -207,24 +212,24 @@ void simulate(agent_data& data, real_t* numerators, real_t* denominators, index_
 	compute_result<dims>(data, numerators, denominators, ballots, with_internalized);
 }
 
-void cell_solver::simulate_secretion_and_uptake(agent_data& data, bool recompute)
+void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recompute)
 {
 	if (recompute)
-		resize(data);
+		resize(m);
 
-	if (data.m.mesh.dims == 1)
+	if (m.mesh.dims == 1)
 	{
-		simulate<1>(data, numerators_.data(), denominators_.data(), ballots_.get(), recompute,
+		simulate<1>(m.agents.data_, numerators_.data(), denominators_.data(), ballots_.get(), recompute,
 					compute_internalized_substrates_);
 	}
-	else if (data.m.mesh.dims == 2)
+	else if (m.mesh.dims == 2)
 	{
-		simulate<2>(data, numerators_.data(), denominators_.data(), ballots_.get(), recompute,
+		simulate<2>(m.agents.data_, numerators_.data(), denominators_.data(), ballots_.get(), recompute,
 					compute_internalized_substrates_);
 	}
-	else if (data.m.mesh.dims == 3)
+	else if (m.mesh.dims == 3)
 	{
-		simulate<3>(data, numerators_.data(), denominators_.data(), ballots_.get(), recompute,
+		simulate<3>(m.agents.data_, numerators_.data(), denominators_.data(), ballots_.get(), recompute,
 					compute_internalized_substrates_);
 	}
 }
@@ -257,30 +262,30 @@ void release_dim(agent_data& data, index_t index)
 					 data.fraction_released_at_death.data() + index * data.m.substrates_count, voxel_volume, dens_l);
 }
 
-void cell_solver::release_internalized_substrates(agent_data& data, index_t index)
+void cell_solver::release_internalized_substrates(microenvironment& m, index_t index)
 {
 	if (!compute_internalized_substrates_)
 		return;
 
-	if (data.m.mesh.dims == 1)
-		release_dim<1>(data, index);
-	else if (data.m.mesh.dims == 2)
-		release_dim<2>(data, index);
-	else if (data.m.mesh.dims == 3)
-		release_dim<3>(data, index);
+	if (m.mesh.dims == 1)
+		release_dim<1>(m.agents.data_, index);
+	else if (m.mesh.dims == 2)
+		release_dim<2>(m.agents.data_, index);
+	else if (m.mesh.dims == 3)
+		release_dim<3>(m.agents.data_, index);
 }
 
-void cell_solver::resize(const agent_data& data)
+void cell_solver::resize(const microenvironment& m)
 {
-	numerators_.resize(data.m.substrates_count * data.agents_count);
-	denominators_.resize(data.m.substrates_count * data.agents_count);
+	numerators_.resize(m.substrates_count * m.agents.data_.agents_count);
+	denominators_.resize(m.substrates_count * m.agents.data_.agents_count);
 }
 
-void cell_solver::initialize(agent_data& data, bool compute_internalized_substrates)
+void cell_solver::initialize(const microenvironment& m, bool compute_internalized_substrates)
 {
 	compute_internalized_substrates_ = compute_internalized_substrates;
 
-	resize(data);
+	resize(m);
 
-	ballots_ = std::make_unique<index_t[]>(data.m.mesh.voxel_count());
+	ballots_ = std::make_unique<index_t[]>(m.mesh.voxel_count());
 }

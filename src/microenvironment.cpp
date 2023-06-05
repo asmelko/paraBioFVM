@@ -20,6 +20,7 @@ void initialize_substrate_densities(real_t* substrate_densities, const real_t* i
 microenvironment::microenvironment(cartesian_mesh mesh, index_t substrates_count, real_t time_step,
 								   const real_t* initial_conditions)
 	: mesh(mesh),
+	  agents(*this),
 	  substrates_count(substrates_count),
 	  time_step(time_step),
 	  substrate_densities(std::make_unique<real_t[]>(substrates_count * mesh.voxel_count())),

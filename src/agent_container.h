@@ -2,14 +2,17 @@
 
 #include <memory>
 
+#include "agent.h"
 #include "agent_data.h"
 
-class agent;
+class cell_solver;
 
 using agent_ptr = std::unique_ptr<agent>;
 
 class agent_container
 {
+	friend cell_solver;
+
 	agent_data data_;
 
 	agent_id_t next_agent_id_;
@@ -19,7 +22,7 @@ class agent_container
 public:
 	agent_container(microenvironment& m);
 
-	void add_agent();
+	agent* add_agent();
 
 	void remove_agent(agent_id_t id);
 	void remove_agent(agent_ptr& agent);

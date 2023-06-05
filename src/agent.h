@@ -1,6 +1,5 @@
 #pragma once
 
-#include "agent_container.h"
 #include "agent_data.h"
 #include "types.h"
 
@@ -29,7 +28,9 @@ public:
 
 	real_t& volume();
 
-	point_t<real_t, 3> position() const;
+	real_t* position();
+
+	point_t<real_t, 3> get_position() const;
 
 	point_t<index_t, 3> voxel_index() const;
 

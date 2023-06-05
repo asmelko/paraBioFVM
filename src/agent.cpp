@@ -31,7 +31,9 @@ real_t* agent::fraction_transferred_when_ingested()
 
 real_t& agent::volume() { return data_.volumes[index_]; }
 
-point_t<real_t, 3> agent::position() const
+real_t* agent::position() { return data_.positions.data() + index_ * data_.m.mesh.dims; }
+
+point_t<real_t, 3> agent::get_position() const
 {
 	if (data_.m.mesh.dims == 1)
 		return point_t<real_t, 3> { data_.positions[index_ * data_.m.mesh.dims], 0, 0 };
@@ -46,7 +48,7 @@ point_t<real_t, 3> agent::position() const
 
 point_t<index_t, 3> agent::voxel_index() const
 {
-	return point_t<index_t, 3> { data_.m.mesh.voxel_position(position()) };
+	return point_t<index_t, 3> { data_.m.mesh.voxel_position(get_position()) };
 }
 
 real_t* agent::nearest_density_vector()

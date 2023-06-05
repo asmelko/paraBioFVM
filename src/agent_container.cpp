@@ -6,11 +6,13 @@
 
 agent_container::agent_container(microenvironment& m) : data_(m) {}
 
-void agent_container::add_agent()
+agent* agent_container::add_agent()
 {
 	agents_.emplace_back(std::make_unique<agent>(next_agent_id_++, data_, data_.agents_count));
 
-    data_.add();
+	data_.add();
+
+	return agents_.back().get();
 }
 
 void agent_container::remove_agent(agent_id_t id)

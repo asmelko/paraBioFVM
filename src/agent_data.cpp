@@ -13,7 +13,7 @@ void agent_data::add()
     uptake_rates.resize(agents_count * m.substrates_count);
     net_export_rates.resize(agents_count * m.substrates_count);
 
-    internalized_substrates.resize(agents_count * m.substrates_count);
+    internalized_substrates.resize(agents_count * m.substrates_count, 0);
     fraction_released_at_death.resize(agents_count * m.substrates_count);
     fraction_transferred_when_ingested.resize(agents_count * m.substrates_count);
 

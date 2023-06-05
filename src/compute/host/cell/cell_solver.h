@@ -42,14 +42,12 @@ class cell_solver
 
 	std::unique_ptr<index_t[]> ballots_;
 
-	void resize(const agent_data& data);
+	void resize(const microenvironment& m);
 
 public:
-	void initialize(agent_data& data, bool compute_internalized_substrates);
+	void initialize(const microenvironment& m, bool compute_internalized_substrates);
 
-	void simulate_secretion_and_uptake(agent_data& data, bool recompute);
+	void simulate_secretion_and_uptake(microenvironment& m, bool recompute);
 
-	void release_internalized_substrates(agent_data& data, index_t index);
-
-	void precompute(agent_data& data);
+	void release_internalized_substrates(microenvironment& m, index_t index);
 };

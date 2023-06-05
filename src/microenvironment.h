@@ -6,6 +6,7 @@
 
 #include <noarr/structures_extended.hpp>
 
+#include "agent_container.h"
 #include "mesh.h"
 #include "types.h"
 
@@ -19,6 +20,8 @@ struct microenvironment
 	std::vector<std::string> substrates_units;
 
 	cartesian_mesh mesh;
+
+	agent_container agents;
 
 	index_t substrates_count;
 	real_t time_step;
