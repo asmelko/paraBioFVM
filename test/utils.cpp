@@ -1,5 +1,9 @@
 #include "utils.h"
 
+#include <noarr/structures/interop/bag.hpp>
+
+#include "traits.h"
+
 microenvironment default_microenv(cartesian_mesh mesh)
 {
 	real_t diffusion_time_step = 5;
@@ -87,4 +91,91 @@ void add_boundary_dirichlet(microenvironment& m, index_t substrates_count, index
 	// only the first substrate
 	values[0] = value;
 	conditions[0] = true;
+}
+
+void compute_expected_agent_internalized_1d(microenvironment& m, std::vector<real_t>& expected_internalized)
+{
+	auto dens_l = layout_traits<1>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	for (index_t i = 0; i < m.agents.data().agents_count; i++)
+	{
+		for (index_t s = 0; s < m.substrates_count; s++)
+		{
+			auto num = m.agents.data().secretion_rates[i * m.substrates_count + s]
+					   * m.agents.data().saturation_densities[i * m.substrates_count + s] * m.time_step
+					   * m.agents.data().volumes[i];
+
+			auto denom = (m.agents.data().secretion_rates[i * m.substrates_count + s]
+						  + m.agents.data().uptake_rates[i * m.substrates_count + s])
+						 * m.time_step * m.agents.data().volumes[i] / m.mesh.voxel_volume();
+
+			auto factor = m.agents.data().net_export_rates[i * m.substrates_count + s] * m.time_step;
+
+			point_t<real_t, 3> pos { m.agents.data().positions[i], 0, 0 };
+			auto mesh_idx = m.mesh.voxel_position(pos);
+
+			expected_internalized[i * m.substrates_count + s] -=
+				(m.mesh.voxel_volume() * -denom * densities.at<'x', 's'>(mesh_idx[0], s) + num) / (1 + denom) + factor;
+		}
+	}
+}
+
+std::vector<real_t> compute_expected_agent_densities_1d(microenvironment& m)
+{
+	auto dens_l = layout_traits<1>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	std::vector<real_t> expected_densities(m.mesh.voxel_count() * m.substrates_count, 0);
+
+	for (index_t s = 0; s < m.substrates_count; s++)
+	{
+		for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		{
+			real_t num = 0, denom = 0, factor = 0;
+
+			for (index_t i = 0; i < m.agents.data().agents_count; i++)
+			{
+				if (m.agents.data().positions[i] == x)
+				{
+					num += m.agents.data().secretion_rates[i * m.substrates_count + s]
+						   * m.agents.data().saturation_densities[i * m.substrates_count + s] * m.time_step
+						   * m.agents.data().volumes[i] / m.mesh.voxel_volume();
+
+					denom += (m.agents.data().secretion_rates[i * m.substrates_count + s]
+							  + m.agents.data().uptake_rates[i * m.substrates_count + s])
+							 * m.time_step * m.agents.data().volumes[i] / m.mesh.voxel_volume();
+
+					factor += m.agents.data().net_export_rates[i * m.substrates_count + s] * m.time_step
+							  / m.mesh.voxel_volume();
+				}
+			}
+			expected_densities[x * m.substrates_count + s] =
+				((densities.at<'x', 's'>(x, s) + num) / (1 + denom) + factor);
+		}
+	}
+
+	return expected_densities;
+}
+
+void set_default_agent_values(agent* a, index_t rates_offset, index_t volume, point_t<real_t, 3> position, index_t dims)
+{
+	a->secretion_rates()[0] = rates_offset + 100;
+	a->secretion_rates()[1] = 0;
+
+	a->uptake_rates()[0] = rates_offset + 200;
+	a->uptake_rates()[1] = 0;
+
+	a->saturation_densities()[0] = rates_offset + 300;
+	a->saturation_densities()[1] = 0;
+
+	a->net_export_rates()[0] = rates_offset + 400;
+	a->net_export_rates()[1] = 0;
+
+	a->volume() = volume;
+
+	for (index_t i = 0; i < dims; ++i)
+		a->position()[i] = position[i];
 }

@@ -26,4 +26,6 @@ public:
 
 	void remove_agent(agent_id_t id);
 	void remove_agent(agent_ptr& agent);
+
+	const agent_data& data() const;
 };

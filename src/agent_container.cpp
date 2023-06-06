@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "agent.h"
+#include "agent_container.h"
 
 agent_container::agent_container(microenvironment& m) : data_(m) {}
 
@@ -34,3 +35,5 @@ void agent_container::remove_agent(agent_ptr& agent)
 
 	data_.remove(index_to_remove);
 }
+
+const agent_data& agent_container::data() const { return data_; }
