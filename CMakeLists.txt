@@ -31,7 +31,7 @@ list(FILTER src_files EXCLUDE REGEX ".*main\\..*")
 
 add_library(BioFVMCore ${src_files})
 
-target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include)
+target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
 
 # Target unit_BioFVM
 file(GLOB_RECURSE test_files "test/*")

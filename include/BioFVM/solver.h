@@ -3,11 +3,11 @@
 #define impl host
 
 #if impl == host
-#	include "../src/solver/host/bulk_solver.h"
-#	include "../src/solver/host/cell_solver.h"
-#	include "../src/solver/host/diffusion_solver.h"
-#	include "../src/solver/host/dirichlet_solver.h"
-#	include "../src/solver/host/gradient_solver.h"
+#	include "../../src/solver/host/bulk_solver.h"
+#	include "../../src/solver/host/cell_solver.h"
+#	include "../../src/solver/host/diffusion_solver.h"
+#	include "../../src/solver/host/dirichlet_solver.h"
+#	include "../../src/solver/host/gradient_solver.h"
 #endif
 
 namespace biofvm {
