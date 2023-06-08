@@ -1,10 +1,6 @@
 #pragma once
 
-#include <functional>
-
 #include "../../../microenvironment.h"
-
-using bulk_func_t = std::function<void(microenvironment& m, point_t<index_t, 3> voxel_idx, real_t* out)>;
 
 /*
 Performs bulk supply and uptake of substrates.
@@ -24,12 +20,11 @@ class bulk_solver
 	std::unique_ptr<real_t[]> supply_rates_, uptake_rates_, supply_target_densities_;
 
 public:
-	void initialize(microenvironment& m, bulk_func_t supply_rate_f, bulk_func_t uptake_rate_f,
-					bulk_func_t supply_target_densities_f);
+	void initialize(microenvironment& m);
 
 	void solve(microenvironment& m);
 
-    void solve_1d(microenvironment& m);
-    void solve_2d(microenvironment& m);
-    void solve_3d(microenvironment& m);
+	void solve_1d(microenvironment& m);
+	void solve_2d(microenvironment& m);
+	void solve_3d(microenvironment& m);
 };

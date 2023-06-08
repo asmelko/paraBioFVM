@@ -29,6 +29,10 @@ class microenvironment_builder
 	std::vector<point_t<bool, 3>> boundary_dirichlet_mins_conditions;
 	std::vector<point_t<bool, 3>> boundary_dirichlet_maxs_conditions;
 
+	bulk_func_t supply_rate_func, uptake_rate_func, supply_target_densities_func;
+
+	bool compute_internalized_substrates = false;
+
 	void fill_dirichlet_vectors(microenvironment& m);
 
 public:
@@ -54,6 +58,11 @@ public:
 										   point_t<real_t, 3> maxs_values,
 										   point_t<bool, 3> mins_conditions = { true, true, true },
 										   point_t<bool, 3> maxs_conditions = { true, true, true });
+
+	void set_bulk_functions(bulk_func_t supply_rate_func, bulk_func_t uptake_rate_func,
+							bulk_func_t supply_target_densities_func);
+
+	void do_compute_internalized_substrates();
 
 	microenvironment build();
 };

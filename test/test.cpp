@@ -3,10 +3,10 @@
 #include <noarr/structures/extra/traverser.hpp>
 #include <noarr/structures/interop/bag.hpp>
 
-#include "compute/host/cell/cell_solver.h"
-#include "compute/host/diffusion/diffusion_solver.h"
-#include "compute/host/dirichlet/dirichlet_solver.h"
-#include "compute/host/gradient/gradient_solver.h"
+#include "solvers/host/cell/cell_solver.h"
+#include "solvers/host/diffusion/diffusion_solver.h"
+#include "solvers/host/dirichlet/dirichlet_solver.h"
+#include "solvers/host/gradient/gradient_solver.h"
 #include "traits.h"
 #include "utils.h"
 
@@ -782,6 +782,7 @@ TEST_P(host_agents, simple_D1)
 
 	auto m = default_microenv(mesh);
 	m.time_step = 0.01;
+	m.compute_internalized_substrates = compute_internalized;
 
 	index_t substrates_count = 2;
 
@@ -799,7 +800,7 @@ TEST_P(host_agents, simple_D1)
 
 	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
 
-	s.initialize(m, compute_internalized);
+	s.initialize(m);
 
 	s.simulate_secretion_and_uptake(m, true);
 
@@ -857,6 +858,7 @@ TEST_P(host_agents, simple_D2)
 
 	auto m = default_microenv(mesh);
 	m.time_step = 0.01;
+	m.compute_internalized_substrates = compute_internalized;
 
 	index_t substrates_count = 2;
 
@@ -874,7 +876,7 @@ TEST_P(host_agents, simple_D2)
 
 	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
 
-	s.initialize(m, compute_internalized);
+	s.initialize(m);
 
 	s.simulate_secretion_and_uptake(m, true);
 
@@ -932,6 +934,7 @@ TEST_P(host_agents, simple_D3)
 
 	auto m = default_microenv(mesh);
 	m.time_step = 0.01;
+	m.compute_internalized_substrates = compute_internalized;
 
 	index_t substrates_count = 2;
 
@@ -949,7 +952,7 @@ TEST_P(host_agents, simple_D3)
 
 	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
 
-	s.initialize(m, compute_internalized);
+	s.initialize(m);
 
 	s.simulate_secretion_and_uptake(m, true);
 
@@ -1007,6 +1010,7 @@ TEST_P(host_agents, conflict)
 
 	auto m = default_microenv(mesh);
 	m.time_step = 0.01;
+	m.compute_internalized_substrates = compute_internalized;
 
 	index_t substrates_count = 2;
 
@@ -1030,7 +1034,7 @@ TEST_P(host_agents, conflict)
 
 	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
 
-	s.initialize(m, compute_internalized);
+	s.initialize(m);
 
 	std::vector<real_t> expected_internalized(m.agents.data().agents_count * m.substrates_count, 0);
 

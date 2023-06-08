@@ -96,6 +96,16 @@ void microenvironment_builder::add_boundary_dirichlet_conditions(std::size_t den
 	boundary_dirichlet_maxs_conditions[density_index] = maxs_conditions;
 }
 
+void microenvironment_builder::set_bulk_functions(bulk_func_t supply_rate_func, bulk_func_t uptake_rate_func,
+												  bulk_func_t supply_target_densities_func)
+{
+	this->supply_rate_func = std::move(supply_rate_func);
+	this->uptake_rate_func = std::move(uptake_rate_func);
+	this->supply_target_densities_func = std::move(supply_target_densities_func);
+}
+
+void microenvironment_builder::do_compute_internalized_substrates() { compute_internalized_substrates = true; }
+
 void fill_one(index_t dim_idx, index_t substrates_count, const std::vector<point_t<real_t, 3>>& values,
 			  const std::vector<point_t<bool, 3>>& conditions, point_t<std::unique_ptr<real_t[]>, 3>& linearized_values,
 			  point_t<std::unique_ptr<bool[]>, 3>& linearized_conditions)
@@ -162,6 +172,12 @@ microenvironment microenvironment_builder::build()
 	std::copy(dirichlet_conditions.begin(), dirichlet_conditions.end(), m.dirichlet_interior_conditions.get());
 
 	fill_dirichlet_vectors(m);
+
+	m.supply_rate_func = std::move(supply_rate_func);
+	m.uptake_rate_func = std::move(uptake_rate_func);
+	m.supply_target_densities_func = std::move(supply_target_densities_func);
+
+	m.compute_internalized_substrates = compute_internalized_substrates;
 
 	return m;
 }

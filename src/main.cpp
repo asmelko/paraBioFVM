@@ -1,8 +1,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "compute/host/diffusion/diffusion_solver.h"
-#include "compute/host/gradient/gradient_solver.h"
+#include "solvers/solver.h"
 
 int main()
 {
@@ -24,7 +23,7 @@ int main()
 	m.diffustion_coefficients = std::move(diff_coefs);
 	m.decay_rates = std::move(decay_rates);
 
-	diffusion_solver s;
+	solver s;
 
 	s.initialize(m);
 
@@ -34,7 +33,7 @@ int main()
 		{
 			auto start = std::chrono::high_resolution_clock::now();
 
-			s.solve(m);
+			s.diffusion.solve(m);
 
 			auto end = std::chrono::high_resolution_clock::now();
 
@@ -44,7 +43,7 @@ int main()
 		{
 			auto start = std::chrono::high_resolution_clock::now();
 
-			gradient_solver::solve(m);
+			s.gradient.solve(m);
 
 			auto end = std::chrono::high_resolution_clock::now();
 
@@ -57,7 +56,7 @@ int main()
 
 	for (int i = 0; i < 5; i++)
 	{
-		s.solve(m);
-		gradient_solver::solve(m);
+		s.diffusion.solve(m);
+		s.gradient.solve(m);
 	}
 }

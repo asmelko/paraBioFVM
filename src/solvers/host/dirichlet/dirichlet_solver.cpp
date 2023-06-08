@@ -104,6 +104,8 @@ void solve_boundaries<3>(microenvironment& m)
 				   m.dirichlet_max_boundary_conditions[2].get(), dens_l ^ noarr::fix<'z'>(m.mesh.grid_shape[2] - 1));
 }
 
+void dirichlet_solver::initialize(microenvironment&) {}
+
 void dirichlet_solver::solve(microenvironment& m)
 {
 	if (m.mesh.dims == 1)

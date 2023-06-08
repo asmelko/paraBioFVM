@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -9,6 +10,10 @@
 #include "agent_container.h"
 #include "mesh.h"
 #include "types.h"
+
+struct microenvironment;
+
+using bulk_func_t = std::function<void(microenvironment& m, point_t<index_t, 3> voxel_idx, real_t* out)>;
 
 struct microenvironment
 {
@@ -42,4 +47,8 @@ struct microenvironment
 	point_t<std::unique_ptr<real_t[]>, 3> dirichlet_max_boundary_values;
 	point_t<std::unique_ptr<bool[]>, 3> dirichlet_min_boundary_conditions;
 	point_t<std::unique_ptr<bool[]>, 3> dirichlet_max_boundary_conditions;
+
+	bulk_func_t supply_rate_func, uptake_rate_func, supply_target_densities_func;
+
+	bool compute_internalized_substrates;
 };

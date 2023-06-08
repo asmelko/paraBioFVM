@@ -14,6 +14,8 @@ m.dirichlet_values - array of dirichlet values for each substrate with a dirichl
 class dirichlet_solver
 {
 public:
+	static void initialize(microenvironment& m);
+
 	static void solve(microenvironment& m);
     
     static void solve_1d(microenvironment& m);

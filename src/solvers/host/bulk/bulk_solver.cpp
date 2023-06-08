@@ -2,12 +2,11 @@
 
 #include "../../../traits.h"
 
-void bulk_solver::initialize(microenvironment& m, bulk_func_t supply_rate_f, bulk_func_t uptake_rate_f,
-							 bulk_func_t supply_target_densities_f)
+void bulk_solver::initialize(microenvironment& m)
 {
-	supply_rate_f_ = supply_rate_f;
-	uptake_rate_f_ = uptake_rate_f;
-	supply_target_densities_f_ = supply_target_densities_f;
+	supply_rate_f_ = m.supply_rate_func;
+	uptake_rate_f_ = m.uptake_rate_func;
+	supply_target_densities_f_ = m.supply_target_densities_func;
 
 	supply_rates_ = std::make_unique<real_t[]>(m.substrates_count);
 	uptake_rates_ = std::make_unique<real_t[]>(m.substrates_count);

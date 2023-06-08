@@ -266,9 +266,9 @@ void cell_solver::resize(const microenvironment& m)
 	factors_.resize(m.substrates_count * m.agents.data_.agents_count);
 }
 
-void cell_solver::initialize(const microenvironment& m, bool compute_internalized_substrates)
+void cell_solver::initialize(const microenvironment& m)
 {
-	compute_internalized_substrates_ = compute_internalized_substrates;
+	compute_internalized_substrates_ = m.compute_internalized_substrates;
 
 	resize(m);
 

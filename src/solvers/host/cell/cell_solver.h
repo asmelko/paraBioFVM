@@ -46,7 +46,7 @@ class cell_solver
 	void resize(const microenvironment& m);
 
 public:
-	void initialize(const microenvironment& m, bool compute_internalized_substrates);
+	void initialize(const microenvironment& m);
 
 	void simulate_secretion_and_uptake(microenvironment& m, bool recompute);
 

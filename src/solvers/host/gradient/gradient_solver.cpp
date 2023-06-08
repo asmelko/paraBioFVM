@@ -195,3 +195,5 @@ void gradient_solver::solve(microenvironment& m)
 						  layout_traits<3>::construct_density_layout(m.substrates_count, m.mesh.grid_shape),
 						  layout_traits<3>::construct_gradient_layout(m.substrates_count, m.mesh.grid_shape));
 }
+
+void gradient_solver::initialize(microenvironment&) {}
