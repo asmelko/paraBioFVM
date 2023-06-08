@@ -17,15 +17,15 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	# For Windows: Prevent overriding the parent project's compiler/linker settings
 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 	FetchContent_MakeAvailable(googletest)
-
-	# Fetch noarr
-	FetchContent_Declare(
-	  noarr_structures
-	  GIT_REPOSITORY https://github.com/ParaCoToUl/noarr-structures.git
-	  GIT_TAG        HEAD
-	)
-	FetchContent_Populate(noarr_structures)
 endif()
+
+# Fetch noarr
+FetchContent_Declare(
+	noarr_structures
+	GIT_REPOSITORY https://github.com/ParaCoToUl/noarr-structures.git
+	GIT_TAG        HEAD
+)
+FetchContent_Populate(noarr_structures)
 
 # Target BioFVMCore
 file(GLOB_RECURSE src_files "src/*")
@@ -55,7 +55,13 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	gtest_discover_tests(unit_BioFVM)
 endif()
 
-foreach(target BioFVM unit_BioFVM BioFVMCore)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+set(all_targets BioFVM unit_BioFVM BioFVMCore)
+else()
+set(all_targets BioFVMCore)
+endif()
+
+foreach(target ${all_targets})
 	if(MSVC)
 		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /bigobj>)
 	else()
