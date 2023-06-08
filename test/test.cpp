@@ -3,12 +3,14 @@
 #include <noarr/structures/extra/traverser.hpp>
 #include <noarr/structures/interop/bag.hpp>
 
-#include "solvers/host/cell/cell_solver.h"
-#include "solvers/host/diffusion/diffusion_solver.h"
-#include "solvers/host/dirichlet/dirichlet_solver.h"
-#include "solvers/host/gradient/gradient_solver.h"
+#include "solver/host/cell_solver.h"
+#include "solver/host/diffusion_solver.h"
+#include "solver/host/dirichlet_solver.h"
+#include "solver/host/gradient_solver.h"
 #include "traits.h"
 #include "utils.h"
+
+using namespace biofvm;
 
 class host_diffusion_solver : public testing::TestWithParam<index_t>
 {};

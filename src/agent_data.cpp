@@ -2,6 +2,8 @@
 
 #include "microenvironment.h"
 
+using namespace biofvm;
+
 agent_data::agent_data(microenvironment& m) : agents_count(0), m(m) {}
 
 void agent_data::add()

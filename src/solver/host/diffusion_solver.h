@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../microenvironment.h"
+#include "dirichlet_solver.h"
 
 /*
 The diffusion is the problem of solving tridiagonal matrix system with these coeficients:
@@ -35,6 +35,8 @@ the whole 'plane' s*x rather than just s. For it to work properly, helper vector
 their data span over x*s, not only over s (so they got copied substrate_factor_ times in s dimension).
 */
 
+namespace biofvm {
+
 class diffusion_solver
 {
 	std::unique_ptr<real_t[]> bx_, cx_, ex_;
@@ -51,8 +53,11 @@ class diffusion_solver
 	void solve_3d(microenvironment& m);
 
 public:
+	void initialize(microenvironment& m, dirichlet_solver& dirichlet);
 	void initialize(microenvironment& m);
 	void initialize(microenvironment& m, index_t substrate_factor);
 
 	void solve(microenvironment& m);
 };
+
+} // namespace biofvm

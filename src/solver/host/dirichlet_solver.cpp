@@ -2,7 +2,9 @@
 
 #include <noarr/structures/extra/traverser.hpp>
 
-#include "../../../traits.h"
+#include "../../traits.h"
+
+using namespace biofvm;
 
 template <index_t dims>
 auto fix_dims(const index_t* voxel_index)

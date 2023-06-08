@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "../../../agent_data.h"
+#include "agent_data.h"
 
 /*
 Performs secretion and uptake of cells.
@@ -33,6 +33,8 @@ F = fraction released at death
 D = D + I*F/v
 */
 
+namespace biofvm {
+
 class cell_solver
 {
 	bool compute_internalized_substrates_;
@@ -52,3 +54,5 @@ public:
 
 	void release_internalized_substrates(microenvironment& m, index_t index);
 };
+
+} // namespace biofvm

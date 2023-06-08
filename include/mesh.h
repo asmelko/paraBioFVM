@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+namespace biofvm {
+
 struct cartesian_mesh
 {
 	index_t dims; // 1 or 2 or 3
@@ -20,3 +22,5 @@ struct cartesian_mesh
 
 	point_t<index_t, 3> voxel_position(point_t<real_t, 3> position) const;
 };
+
+} // namespace biofvm

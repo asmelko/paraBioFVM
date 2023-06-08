@@ -5,11 +5,11 @@
 #include <string>
 #include <vector>
 
-#include <noarr/structures_extended.hpp>
-
 #include "agent_container.h"
 #include "mesh.h"
 #include "types.h"
+
+namespace biofvm {
 
 struct microenvironment;
 
@@ -52,3 +52,5 @@ struct microenvironment
 
 	bool compute_internalized_substrates;
 };
+
+} // namespace biofvm

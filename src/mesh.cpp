@@ -1,5 +1,7 @@
 #include "mesh.h"
 
+using namespace biofvm;
+
 cartesian_mesh::cartesian_mesh(index_t dims, point_t<index_t, 3> bounding_box_mins,
 							   point_t<index_t, 3> bounding_box_maxs, point_t<index_t, 3> voxel_shape)
 	: dims(dims), bounding_box_mins(bounding_box_mins), bounding_box_maxs(bounding_box_maxs), voxel_shape(voxel_shape)

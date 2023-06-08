@@ -1,6 +1,8 @@
 #include "bulk_solver.h"
 
-#include "../../../traits.h"
+#include "../../traits.h"
+
+using namespace biofvm;
 
 void bulk_solver::initialize(microenvironment& m)
 {

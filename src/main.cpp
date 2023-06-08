@@ -1,7 +1,9 @@
 #include <chrono>
 #include <iostream>
 
-#include "solvers/solver.h"
+#include "solver.h"
+
+using namespace biofvm;
 
 int main()
 {

@@ -5,6 +5,8 @@
 #include "agent.h"
 #include "agent_data.h"
 
+namespace biofvm {
+
 class cell_solver;
 
 using agent_ptr = std::unique_ptr<agent>;
@@ -29,3 +31,5 @@ public:
 
 	const agent_data& data() const;
 };
+
+} // namespace biofvm

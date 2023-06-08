@@ -7,6 +7,8 @@
 #include "microenvironment.h"
 #include "types.h"
 
+using namespace biofvm;
+
 void microenvironment_builder::set_name(const std::string& name) { this->name = name; }
 
 void microenvironment_builder::set_time_units(const std::string& time_units) { this->time_units = time_units; }

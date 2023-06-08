@@ -4,6 +4,8 @@
 
 #include "types.h"
 
+namespace biofvm {
+
 template <index_t dims>
 struct layout_traits
 {};
@@ -89,3 +91,5 @@ struct layout_traits<3>
 			   ^ noarr::set_length<'y'>(grid_dims[1]) ^ noarr::set_length<'z'>(grid_dims[2]);
 	}
 };
+
+} // namespace biofvm

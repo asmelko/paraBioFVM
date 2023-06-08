@@ -31,7 +31,7 @@ list(FILTER src_files EXCLUDE REGEX ".*main\\..*")
 
 add_library(BioFVMCore ${src_files})
 
-target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include)
+target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include)
 
 # Target unit_BioFVM
 file(GLOB_RECURSE test_files "test/*")
@@ -54,10 +54,6 @@ foreach(target BioFVM unit_BioFVM BioFVMCore)
 		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic>)
 	endif()
 endforeach()
-
-add_custom_command(TARGET unit_BioFVM POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/data $<TARGET_FILE_DIR:unit_BioFVM>/data)
 
 enable_testing()
 include(GoogleTest)

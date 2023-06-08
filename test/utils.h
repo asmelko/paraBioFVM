@@ -5,6 +5,8 @@
 #include "microenvironment.h"
 #include "types.h"
 
+namespace biofvm {
+
 microenvironment default_microenv(cartesian_mesh mesh);
 
 microenvironment biorobots_microenv(cartesian_mesh mesh);
@@ -20,3 +22,5 @@ std::vector<real_t> compute_expected_agent_densities_1d(microenvironment& m);
 
 void set_default_agent_values(agent* a, index_t rates_offset, index_t volume, point_t<real_t, 3> position,
 							  index_t dims);
+
+} // namespace biofvm

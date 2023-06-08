@@ -6,6 +6,8 @@
 #include "microenvironment.h"
 #include "types.h"
 
+namespace biofvm {
+
 class microenvironment_builder
 {
 	std::string name, time_units, space_units;
@@ -66,3 +68,5 @@ public:
 
 	microenvironment build();
 };
+
+} // namespace biofvm

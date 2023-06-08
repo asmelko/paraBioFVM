@@ -2,7 +2,9 @@
 
 #include <noarr/structures_extended.hpp>
 
-#include "../../../traits.h"
+#include "../../traits.h"
+
+using namespace biofvm;
 
 template <typename density_layout_t, typename gradient_layout_t>
 void solve_x(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,

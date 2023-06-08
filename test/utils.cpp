@@ -4,6 +4,8 @@
 
 #include "traits.h"
 
+namespace biofvm {
+
 microenvironment default_microenv(cartesian_mesh mesh)
 {
 	real_t diffusion_time_step = 5;
@@ -179,3 +181,5 @@ void set_default_agent_values(agent* a, index_t rates_offset, index_t volume, po
 	for (index_t i = 0; i < dims; ++i)
 		a->position()[i] = position[i];
 }
+
+} // namespace biofvm

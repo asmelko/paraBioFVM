@@ -1,7 +1,9 @@
 #include "cell_solver.h"
 
-#include "../../../microenvironment.h"
-#include "../../../traits.h"
+#include "microenvironment.h"
+#include "../../traits.h"
+
+using namespace biofvm;
 
 static constexpr index_t no_ballot = -1;
 

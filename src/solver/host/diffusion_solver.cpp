@@ -6,8 +6,9 @@
 #include <noarr/structures/interop/bag.hpp>
 #include <noarr/structures_extended.hpp>
 
-#include "../../../traits.h"
-#include "../dirichlet/dirichlet_solver.h"
+#include "../../traits.h"
+
+using namespace biofvm;
 
 index_t lcm(index_t a, index_t b)
 {
@@ -21,6 +22,8 @@ index_t lcm(index_t a, index_t b)
 
 	return ret;
 }
+
+void diffusion_solver::initialize(microenvironment& m, dirichlet_solver&) { initialize(m); }
 
 void diffusion_solver::initialize(microenvironment& m)
 {

@@ -5,6 +5,8 @@
 #include "agent.h"
 #include "agent_container.h"
 
+using namespace biofvm;
+
 agent_container::agent_container(microenvironment& m) : data_(m) {}
 
 agent* agent_container::add_agent()

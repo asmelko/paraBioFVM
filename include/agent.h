@@ -1,8 +1,10 @@
 #pragma once
 
-#include "agent_data.h"
 #include "types.h"
 
+namespace biofvm {
+
+struct agent_data;
 class agent_container;
 
 class agent
@@ -37,3 +39,5 @@ public:
 	real_t* nearest_density_vector();
 	point_t<real_t, 3> nearest_gradient(index_t substrate_index) const;
 };
+
+} // namespace biofvm

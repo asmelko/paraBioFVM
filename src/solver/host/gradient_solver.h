@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../../../microenvironment.h"
+#include "microenvironment.h"
+
+namespace biofvm {
 
 class gradient_solver
 {
@@ -9,3 +11,5 @@ public:
 
 	static void solve(microenvironment& m);
 };
+
+} // namespace biofvm

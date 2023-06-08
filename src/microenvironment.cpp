@@ -4,6 +4,8 @@
 
 #include "traits.h"
 
+using namespace biofvm;
+
 template <index_t dims>
 void initialize_substrate_densities(real_t* substrate_densities, const real_t* initial_conditions,
 									const microenvironment& m)

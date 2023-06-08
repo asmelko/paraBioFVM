@@ -1,8 +1,10 @@
 #include "agent.h"
 
+#include "agent_data.h"
 #include "microenvironment.h"
 #include "traits.h"
-#include "types.h"
+
+using namespace biofvm;
 
 agent::agent(agent_id_t id, agent_data& data, index_t index) : index_(index), data_(data), id(id) {}
 

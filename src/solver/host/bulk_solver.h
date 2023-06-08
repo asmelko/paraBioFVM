@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../microenvironment.h"
+#include "microenvironment.h"
 
 /*
 Performs bulk supply and uptake of substrates.
@@ -12,6 +12,8 @@ T = supply_target_densities_f(m, voxel_idx)
 D = (D + dt*S*T)/(1 + dt*(U+S))
 where D is a voxel substrate density vector
 */
+
+namespace biofvm {
 
 class bulk_solver
 {
@@ -28,3 +30,5 @@ public:
 	void solve_2d(microenvironment& m);
 	void solve_3d(microenvironment& m);
 };
+
+} // namespace biofvm
