@@ -2,18 +2,12 @@ cmake_minimum_required(VERSION 3.18)
 
 project(paraBioFVM VERSION 0.1 LANGUAGES CXX)
 
-if(NOT DEFINED PROJECT_NAME)
-  set(NOT_SUBPROJECT ON)
-else()
-  set(NOT_SUBPROJECT OFF)
-endif()
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(NOT NOT_SUBPROJECT)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	# Fetch Googletest
 	include(FetchContent)
 	FetchContent_Declare(
@@ -41,7 +35,7 @@ add_library(BioFVMCore OBJECT ${src_files})
 
 target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
 
-if(NOT NOT_SUBPROJECT)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	# Target unit_BioFVM
 	file(GLOB_RECURSE test_files "test/*")
 	add_executable(unit_BioFVM ${test_files})
