@@ -2,6 +2,7 @@
 
 #include <noarr/structures/extra/traverser.hpp>
 
+#include "agent_container.h"
 #include "traits.h"
 
 using namespace biofvm;
