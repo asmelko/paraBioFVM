@@ -11,10 +11,15 @@ class cell_solver;
 
 using agent_ptr = std::unique_ptr<agent>;
 
+class agent_container;
+
+using agent_container_ptr = std::unique_ptr<agent_container>;
+
 class agent_container
 {
 	friend cell_solver;
 
+protected:
 	agent_data data_;
 
 	agent_id_t next_agent_id_;
@@ -30,6 +35,10 @@ public:
 	void remove_agent(agent_ptr& agent);
 
 	const agent_data& data() const;
+
+	const std::vector<agent_ptr>& agents() const;
+
+	virtual ~agent_container() = default;
 };
 
 } // namespace biofvm

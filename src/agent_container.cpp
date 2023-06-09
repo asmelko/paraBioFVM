@@ -39,3 +39,5 @@ void agent_container::remove_agent(agent_ptr& agent)
 }
 
 const agent_data& agent_container::data() const { return data_; }
+
+const std::vector<agent_ptr>& agent_container::agents() const { return agents_; }

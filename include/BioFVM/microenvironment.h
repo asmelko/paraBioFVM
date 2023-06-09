@@ -26,7 +26,7 @@ struct microenvironment
 
 	cartesian_mesh mesh;
 
-	agent_container agents;
+	agent_container_ptr agents;
 
 	index_t substrates_count;
 	real_t time_step;

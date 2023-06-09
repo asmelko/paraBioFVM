@@ -788,9 +788,9 @@ TEST_P(host_agents, simple_D1)
 
 	index_t substrates_count = 2;
 
-	auto a1 = m.agents.add_agent();
-	auto a2 = m.agents.add_agent();
-	auto a3 = m.agents.add_agent();
+	auto a1 = m.agents->add_agent();
+	auto a2 = m.agents->add_agent();
+	auto a3 = m.agents->add_agent();
 
 	set_default_agent_values(a1, 0, 1000, { 10, 0, 0 }, 1);
 	set_default_agent_values(a2, 400, 1000, { 30, 0, 0 }, 1);
@@ -864,9 +864,9 @@ TEST_P(host_agents, simple_D2)
 
 	index_t substrates_count = 2;
 
-	auto a1 = m.agents.add_agent();
-	auto a2 = m.agents.add_agent();
-	auto a3 = m.agents.add_agent();
+	auto a1 = m.agents->add_agent();
+	auto a2 = m.agents->add_agent();
+	auto a3 = m.agents->add_agent();
 
 	set_default_agent_values(a1, 0, 1000, { 10, 10, 0 }, 2);
 	set_default_agent_values(a2, 400, 1000, { 30, 30, 0 }, 2);
@@ -940,9 +940,9 @@ TEST_P(host_agents, simple_D3)
 
 	index_t substrates_count = 2;
 
-	auto a1 = m.agents.add_agent();
-	auto a2 = m.agents.add_agent();
-	auto a3 = m.agents.add_agent();
+	auto a1 = m.agents->add_agent();
+	auto a2 = m.agents->add_agent();
+	auto a3 = m.agents->add_agent();
 
 	set_default_agent_values(a1, 0, 1000, { 10, 10, 10 }, 3);
 	set_default_agent_values(a2, 400, 1000, { 30, 30, 30 }, 3);
@@ -1019,7 +1019,7 @@ TEST_P(host_agents, conflict)
 	std::vector<agent*> agents;
 
 	for (int i = 0; i < 6; i++)
-		agents.push_back(m.agents.add_agent());
+		agents.push_back(m.agents->add_agent());
 
 	set_default_agent_values(agents[0], 0, 500, { 10, 0, 0 }, 1);
 
@@ -1038,7 +1038,7 @@ TEST_P(host_agents, conflict)
 
 	s.initialize(m);
 
-	std::vector<real_t> expected_internalized(m.agents.data().agents_count * m.substrates_count, 0);
+	std::vector<real_t> expected_internalized(m.agents->data().agents_count * m.substrates_count, 0);
 
 	compute_expected_agent_internalized_1d(m, expected_internalized);
 
