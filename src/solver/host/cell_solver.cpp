@@ -205,18 +205,18 @@ void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recomp
 
 	if (m.mesh.dims == 1)
 	{
-		simulate<1>(m.agents->data_, numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
-					recompute, compute_internalized_substrates_);
+		simulate<1>(m.agents->get_agent_data(), numerators_.data(), denominators_.data(), factors_.data(),
+					ballots_.get(), recompute, compute_internalized_substrates_);
 	}
 	else if (m.mesh.dims == 2)
 	{
-		simulate<2>(m.agents->data_, numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
-					recompute, compute_internalized_substrates_);
+		simulate<2>(m.agents->get_agent_data(), numerators_.data(), denominators_.data(), factors_.data(),
+					ballots_.get(), recompute, compute_internalized_substrates_);
 	}
 	else if (m.mesh.dims == 3)
 	{
-		simulate<3>(m.agents->data_, numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
-					recompute, compute_internalized_substrates_);
+		simulate<3>(m.agents->get_agent_data(), numerators_.data(), denominators_.data(), factors_.data(),
+					ballots_.get(), recompute, compute_internalized_substrates_);
 	}
 }
 
@@ -254,18 +254,18 @@ void cell_solver::release_internalized_substrates(microenvironment& m, index_t i
 		return;
 
 	if (m.mesh.dims == 1)
-		release_dim<1>(m.agents->data_, index);
+		release_dim<1>(m.agents->get_agent_data(), index);
 	else if (m.mesh.dims == 2)
-		release_dim<2>(m.agents->data_, index);
+		release_dim<2>(m.agents->get_agent_data(), index);
 	else if (m.mesh.dims == 3)
-		release_dim<3>(m.agents->data_, index);
+		release_dim<3>(m.agents->get_agent_data(), index);
 }
 
 void cell_solver::resize(const microenvironment& m)
 {
-	numerators_.resize(m.substrates_count * m.agents->data_.agents_count);
-	denominators_.resize(m.substrates_count * m.agents->data_.agents_count);
-	factors_.resize(m.substrates_count * m.agents->data_.agents_count);
+	numerators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
+	denominators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
+	factors_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
 }
 
 void cell_solver::initialize(const microenvironment& m)

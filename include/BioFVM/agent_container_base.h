@@ -20,11 +20,11 @@ class agent_container_base
 	friend cell_solver;
 
 protected:
-	agent_data data_;
+	virtual agent_data& get_agent_data() = 0;
 
 	agent_id_t next_agent_id_;
 
-	agent_container_base(microenvironment& m);
+	agent_container_base();
 
 	index_t& get_agent_index(agent* agent);
 
@@ -33,18 +33,18 @@ public:
 
 	virtual void remove_agent(agent* agent) = 0;
 
-	const agent_data& data() const { return data_; }
-
 	virtual ~agent_container_base() = default;
 };
 
-template <typename agent_t>
+template <typename agent_t, typename agent_data_t>
 class agent_container_templated : public agent_container_base
 {
 protected:
+	agent_data_t data_;
+
 	std::vector<std::unique_ptr<agent_t>> agents_;
 
-	agent_container_templated(microenvironment& m) : agent_container_base(m) {}
+	agent_container_templated(microenvironment& m) : data_(m) {}
 
 public:
 	virtual agent* add_agent() override
@@ -70,6 +70,8 @@ public:
 	}
 
 	const std::vector<agent_t>& agents() const { return agents_; }
+
+	const agent_data_t& data() const { return data_; }
 };
 
 } // namespace biofvm

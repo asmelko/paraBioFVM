@@ -3,6 +3,7 @@
 #include <noarr/structures/extra/traverser.hpp>
 #include <noarr/structures/interop/bag.hpp>
 
+#include "agent_container.h"
 #include "solver/host/cell_solver.h"
 #include "solver/host/diffusion_solver.h"
 #include "solver/host/dirichlet_solver.h"
@@ -1038,7 +1039,9 @@ TEST_P(host_agents, conflict)
 
 	s.initialize(m);
 
-	std::vector<real_t> expected_internalized(m.agents->data().agents_count * m.substrates_count, 0);
+	auto& agent_data = dynamic_cast<agent_container*>(m.agents.get())->data();
+
+	std::vector<real_t> expected_internalized(agent_data.agents_count * m.substrates_count, 0);
 
 	compute_expected_agent_internalized_1d(m, expected_internalized);
 

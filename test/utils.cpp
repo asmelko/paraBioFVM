@@ -2,6 +2,7 @@
 
 #include <noarr/structures/interop/bag.hpp>
 
+#include "agent_container.h"
 #include "traits.h"
 
 namespace biofvm {
@@ -101,21 +102,23 @@ void compute_expected_agent_internalized_1d(microenvironment& m, std::vector<rea
 
 	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
 
-	for (index_t i = 0; i < m.agents->data().agents_count; i++)
+	auto& agent_data = dynamic_cast<agent_container*>(m.agents.get())->data();
+
+	for (index_t i = 0; i < agent_data.agents_count; i++)
 	{
 		for (index_t s = 0; s < m.substrates_count; s++)
 		{
-			auto num = m.agents->data().secretion_rates[i * m.substrates_count + s]
-					   * m.agents->data().saturation_densities[i * m.substrates_count + s] * m.time_step
-					   * m.agents->data().volumes[i];
+			auto num = agent_data.secretion_rates[i * m.substrates_count + s]
+					   * agent_data.saturation_densities[i * m.substrates_count + s] * m.time_step
+					   * agent_data.volumes[i];
 
-			auto denom = (m.agents->data().secretion_rates[i * m.substrates_count + s]
-						  + m.agents->data().uptake_rates[i * m.substrates_count + s])
-						 * m.time_step * m.agents->data().volumes[i] / m.mesh.voxel_volume();
+			auto denom = (agent_data.secretion_rates[i * m.substrates_count + s]
+						  + agent_data.uptake_rates[i * m.substrates_count + s])
+						 * m.time_step * agent_data.volumes[i] / m.mesh.voxel_volume();
 
-			auto factor = m.agents->data().net_export_rates[i * m.substrates_count + s] * m.time_step;
+			auto factor = agent_data.net_export_rates[i * m.substrates_count + s] * m.time_step;
 
-			point_t<real_t, 3> pos { m.agents->data().positions[i], 0, 0 };
+			point_t<real_t, 3> pos { agent_data.positions[i], 0, 0 };
 			auto mesh_idx = m.mesh.voxel_position(pos);
 
 			expected_internalized[i * m.substrates_count + s] -=
@@ -130,6 +133,8 @@ std::vector<real_t> compute_expected_agent_densities_1d(microenvironment& m)
 
 	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
 
+	auto& agent_data = dynamic_cast<agent_container*>(m.agents.get())->data();
+
 	std::vector<real_t> expected_densities(m.mesh.voxel_count() * m.substrates_count, 0);
 
 	for (index_t s = 0; s < m.substrates_count; s++)
@@ -138,20 +143,20 @@ std::vector<real_t> compute_expected_agent_densities_1d(microenvironment& m)
 		{
 			real_t num = 0, denom = 0, factor = 0;
 
-			for (index_t i = 0; i < m.agents->data().agents_count; i++)
+			for (index_t i = 0; i < agent_data.agents_count; i++)
 			{
-				if (m.agents->data().positions[i] == x)
+				if (agent_data.positions[i] == x)
 				{
-					num += m.agents->data().secretion_rates[i * m.substrates_count + s]
-						   * m.agents->data().saturation_densities[i * m.substrates_count + s] * m.time_step
-						   * m.agents->data().volumes[i] / m.mesh.voxel_volume();
+					num += agent_data.secretion_rates[i * m.substrates_count + s]
+						   * agent_data.saturation_densities[i * m.substrates_count + s] * m.time_step
+						   * agent_data.volumes[i] / m.mesh.voxel_volume();
 
-					denom += (m.agents->data().secretion_rates[i * m.substrates_count + s]
-							  + m.agents->data().uptake_rates[i * m.substrates_count + s])
-							 * m.time_step * m.agents->data().volumes[i] / m.mesh.voxel_volume();
+					denom += (agent_data.secretion_rates[i * m.substrates_count + s]
+							  + agent_data.uptake_rates[i * m.substrates_count + s])
+							 * m.time_step * agent_data.volumes[i] / m.mesh.voxel_volume();
 
-					factor += m.agents->data().net_export_rates[i * m.substrates_count + s] * m.time_step
-							  / m.mesh.voxel_volume();
+					factor +=
+						agent_data.net_export_rates[i * m.substrates_count + s] * m.time_step / m.mesh.voxel_volume();
 				}
 			}
 			expected_densities[x * m.substrates_count + s] =
