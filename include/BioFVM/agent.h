@@ -38,6 +38,8 @@ public:
 
 	real_t* nearest_density_vector();
 	point_t<real_t, 3> nearest_gradient(index_t substrate_index) const;
+
+	virtual ~agent() = default;
 };
 
 } // namespace biofvm

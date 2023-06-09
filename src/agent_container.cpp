@@ -25,11 +25,11 @@ void agent_container::remove_agent(agent_id_t id)
 	remove_agent(*it);
 }
 
-index_t agent_container::find_agent_index(const agent_ptr& agent) const { return agent->index_; }
+index_t agent_container::find_agent_index(const agent& agent) const { return agent.index_; }
 
 void agent_container::remove_agent(agent_ptr& agent)
 {
-	index_t index_to_remove = find_agent_index(agent);
+	index_t index_to_remove = find_agent_index(*agent);
 
 	agents_.back()->index_ = index_to_remove;
 
