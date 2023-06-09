@@ -26,6 +26,8 @@ protected:
 
 	std::vector<agent_ptr> agents_;
 
+	index_t find_agent_index(const agent_ptr& agent) const;
+
 public:
 	agent_container(microenvironment& m);
 
