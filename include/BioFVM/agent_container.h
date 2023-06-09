@@ -28,6 +28,8 @@ protected:
 
 	index_t find_agent_index(const agent& agent) const;
 
+	void add_agent(agent_ptr&& agent);
+
 public:
 	agent_container(microenvironment& m);
 

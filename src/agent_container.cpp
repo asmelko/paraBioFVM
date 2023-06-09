@@ -9,11 +9,16 @@ using namespace biofvm;
 
 agent_container::agent_container(microenvironment& m) : data_(m) {}
 
-agent* agent_container::add_agent()
+void agent_container::add_agent(agent_ptr&& agent)
 {
-	agents_.emplace_back(std::make_unique<agent>(next_agent_id_++, data_, data_.agents_count));
+	agents_.emplace_back(std::move(agent));
 
 	data_.add();
+}
+
+agent* agent_container::add_agent()
+{
+	add_agent(std::make_unique<agent>(next_agent_id_++, data_, data_.agents_count));
 
 	return agents_.back().get();
 }
