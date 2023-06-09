@@ -37,14 +37,16 @@ public:
 };
 
 template <typename agent_t, typename agent_data_t>
-class agent_container_templated : public agent_container_base
+class agent_container_common : public agent_container_base
 {
 protected:
 	agent_data_t data_;
 
 	std::vector<std::unique_ptr<agent_t>> agents_;
 
-	agent_container_templated(microenvironment& m) : data_(m) {}
+	template <typename... args_t>
+	agent_container_common(args_t&&... args) : data_(std::forward<args_t>(args)...)
+	{}
 
 public:
 	virtual agent* add_agent() override
