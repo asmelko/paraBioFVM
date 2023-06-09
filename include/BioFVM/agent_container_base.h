@@ -24,7 +24,9 @@ protected:
 
 	agent_id_t next_agent_id_;
 
-	agent_container_base(microenvironment& m) : data_(m), next_agent_id_(0) {}
+	agent_container_base(microenvironment& m);
+
+	index_t& get_agent_index(agent* agent);
 
 public:
 	virtual agent* add_agent() = 0;
@@ -56,9 +58,9 @@ public:
 
 	virtual void remove_agent(agent* agent) override
 	{
-		index_t index_to_remove = agent->index_;
+		index_t index_to_remove = get_agent_index(agent);
 
-		agents_.back()->index_ = index_to_remove;
+		get_agent_index(agents_.back().get()) = index_to_remove;
 
 		std::swap(agents_[index_to_remove], agents_.back());
 

@@ -6,12 +6,11 @@ namespace biofvm {
 
 struct agent_data;
 
-template <typename agent_t>
-class agent_container_templated;
+class agent_container_base;
 
 class agent
 {
-	friend agent_container_templated<agent>;
+	friend agent_container_base;
 
 protected:
 	index_t index_;
