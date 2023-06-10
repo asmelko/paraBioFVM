@@ -43,6 +43,10 @@ class cell_solver
 	std::vector<real_t> denominators_;
 	std::vector<real_t> factors_;
 
+	std::vector<real_t> reduced_numerators_;
+	std::vector<real_t> reduced_denominators_;
+	std::vector<real_t> reduced_factors_;
+
 	std::unique_ptr<index_t[]> ballots_;
 
 	void resize(const microenvironment& m);

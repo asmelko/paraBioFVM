@@ -31,8 +31,10 @@ auto fix_dims(const real_t* cell_position, const cartesian_mesh& m)
 }
 
 template <index_t dims>
-void clear_ballots(const real_t* __restrict__ cell_positions, index_t* __restrict__ ballots, index_t n,
-				   const cartesian_mesh& m)
+void clear_ballots(const real_t* __restrict__ cell_positions, index_t* __restrict__ ballots,
+				   real_t* __restrict__ reduced_numerators, real_t* __restrict__ reduced_denominators,
+				   real_t* __restrict__ reduced_factors, index_t n, const cartesian_mesh& m,
+				   index_t substrate_densities)
 {
 	auto ballot_l = noarr::scalar<index_t>() ^ typename layout_traits<dims>::grid_layout_t()
 					^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
@@ -44,6 +46,13 @@ void clear_ballots(const real_t* __restrict__ cell_positions, index_t* __restric
 		index_t& b = b_l | noarr::get_at(ballots);
 
 		b = no_ballot;
+
+		for (index_t s = 0; s < substrate_densities; s++)
+		{
+			reduced_numerators[i * substrate_densities + s] = 0;
+			reduced_denominators[i * substrate_densities + s] = 0;
+			reduced_factors[i * substrate_densities + s] = 0;
+		}
 	}
 }
 
@@ -71,7 +80,9 @@ void compute_intermediates(real_t* __restrict__ numerators, real_t* __restrict__
 }
 
 template <index_t dims>
-void ballot_and_sum(real_t* __restrict__ numerators, real_t* __restrict__ denominators, real_t* __restrict__ factors,
+void ballot_and_sum(real_t* __restrict__ reduced_numerators, real_t* __restrict__ reduced_denominators,
+					real_t* __restrict__ reduced_factors, const real_t* __restrict__ numerators,
+					const real_t* __restrict__ denominators, const real_t* __restrict__ factors,
 					const real_t* __restrict__ cell_positions, index_t* __restrict__ ballots, index_t n,
 					index_t substrates_count, const cartesian_mesh& m)
 {
@@ -90,41 +101,37 @@ void ballot_and_sum(real_t* __restrict__ numerators, real_t* __restrict__ denomi
 
 			for (index_t s = 0; s < substrates_count; s++)
 			{
-				denominators[i * substrates_count + s] += 1;
+				reduced_numerators[i * substrates_count + s] += numerators[i * substrates_count + s];
+				reduced_denominators[i * substrates_count + s] += denominators[i * substrates_count + s] + 1;
+				reduced_factors[i * substrates_count + s] += factors[i * substrates_count + s];
 			}
 		}
 		else
 		{
 			for (index_t s = 0; s < substrates_count; s++)
 			{
-				numerators[b * substrates_count + s] += numerators[i * substrates_count + s];
-				denominators[b * substrates_count + s] += denominators[i * substrates_count + s];
-				factors[b * substrates_count + s] += factors[i * substrates_count + s];
+				reduced_numerators[b * substrates_count + s] += numerators[i * substrates_count + s];
+				reduced_denominators[b * substrates_count + s] += denominators[i * substrates_count + s];
+				reduced_factors[b * substrates_count + s] += factors[i * substrates_count + s];
 			}
 		}
 	}
 }
 
 template <typename density_layout_t>
-void compute_internalized(real_t* __restrict__ substrate_densities, real_t* __restrict__ internalized_substrates,
-						  const real_t* __restrict__ secretion_rates, const real_t* __restrict__ uptake_rates,
-						  const real_t* __restrict__ saturation_densities, const real_t* __restrict__ net_export_rates,
-						  real_t cell_volume, real_t voxel_volume, real_t time_step, density_layout_t dens_l)
+void compute_internalized(real_t* __restrict__ internalized_substrates, const real_t* __restrict__ substrate_densities,
+						  const real_t* __restrict__ numerator, const real_t* __restrict__ denominator,
+						  const real_t* __restrict__ factor, real_t voxel_volume, density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 
 	for (index_t s = 0; s < substrates_count; s++)
 	{
-		const auto numerator = secretion_rates[s] * saturation_densities[s] * time_step * cell_volume;
-
-		const auto denominator = (secretion_rates[s] + uptake_rates[s]) * time_step * cell_volume / voxel_volume;
-
-		auto factor = net_export_rates[s] * time_step;
-
 		internalized_substrates[s] -=
-			(voxel_volume * -denominator * (dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator)
-				/ (1 + denominator)
-			+ factor;
+			voxel_volume
+			* (((-denominator[s]) * (dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s])
+				   / (1 + denominator[s])
+			   + factor[s]);
 	}
 }
 
@@ -146,8 +153,9 @@ void compute_densities(real_t* __restrict__ substrate_densities, const real_t* _
 }
 
 template <index_t dims>
-void compute_result(agent_data& data, const real_t* numerators, const real_t* denominators, const real_t* factors,
-					const index_t* ballots, bool with_internalized)
+void compute_result(agent_data& data, const real_t* reduced_numerators, const real_t* reduced_denominators,
+					const real_t* reduced_factors, const real_t* numerators, const real_t* denominators,
+					const real_t* factors, const index_t* ballots, bool with_internalized)
 {
 	index_t voxel_volume = data.m.mesh.voxel_volume(); // expecting that voxel volume is the same for all voxels
 	auto dens_l = layout_traits<dims>::construct_density_layout(data.m.substrates_count, data.m.mesh.grid_shape);
@@ -159,13 +167,10 @@ void compute_result(agent_data& data, const real_t* numerators, const real_t* de
 		for (index_t i = 0; i < data.agents_count; i++)
 		{
 			auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
-			compute_internalized(data.m.substrate_densities.get(),
-								 data.internalized_substrates.data() + i * data.m.substrates_count,
-								 data.secretion_rates.data() + i * data.m.substrates_count,
-								 data.uptake_rates.data() + i * data.m.substrates_count,
-								 data.saturation_densities.data() + i * data.m.substrates_count,
-								 data.net_export_rates.data() + i * data.m.substrates_count, data.volumes[i],
-								 voxel_volume, data.m.time_step, dens_l ^ fixed_dims);
+			compute_internalized(data.internalized_substrates.data() + i * data.m.substrates_count,
+								 data.m.substrate_densities.get(), numerators + i * data.m.substrates_count,
+								 denominators + i * data.m.substrates_count, factors + i * data.m.substrates_count,
+								 voxel_volume, dens_l ^ fixed_dims);
 		}
 	}
 
@@ -173,15 +178,16 @@ void compute_result(agent_data& data, const real_t* numerators, const real_t* de
 	{
 		auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
 		auto ballot = (ballot_l ^ fixed_dims) | noarr::get_at(ballots);
-		compute_densities(data.m.substrate_densities.get(), numerators + i * data.m.substrates_count,
-						  denominators + i * data.m.substrates_count, factors + i * data.m.substrates_count,
-						  ballot == i, dens_l ^ fixed_dims);
+		compute_densities(data.m.substrate_densities.get(), reduced_numerators + i * data.m.substrates_count,
+						  reduced_denominators + i * data.m.substrates_count,
+						  reduced_factors + i * data.m.substrates_count, ballot == i, dens_l ^ fixed_dims);
 	}
 }
 
 template <index_t dims>
-void simulate(agent_data& data, real_t* numerators, real_t* denominators, real_t* factors, index_t* ballots,
-			  bool recompute, bool with_internalized)
+void simulate(agent_data& data, real_t* reduced_numerators, real_t* reduced_denominators, real_t* reduced_factors,
+			  real_t* numerators, real_t* denominators, real_t* factors, index_t* ballots, bool recompute,
+			  bool with_internalized)
 {
 	if (recompute)
 	{
@@ -189,13 +195,16 @@ void simulate(agent_data& data, real_t* numerators, real_t* denominators, real_t
 							  data.saturation_densities.data(), data.net_export_rates.data(), data.volumes.data(),
 							  data.m.mesh.voxel_volume(), data.m.time_step, data.agents_count, data.m.substrates_count);
 
-		clear_ballots<dims>(data.positions.data(), ballots, data.agents_count, data.m.mesh);
+		clear_ballots<dims>(data.positions.data(), ballots, reduced_numerators, reduced_denominators, reduced_factors,
+							data.agents_count, data.m.mesh, data.m.substrates_count);
 
-		ballot_and_sum<dims>(numerators, denominators, factors, data.positions.data(), ballots, data.agents_count,
-							 data.m.substrates_count, data.m.mesh);
+		ballot_and_sum<dims>(reduced_numerators, reduced_denominators, reduced_factors, numerators, denominators,
+							 factors, data.positions.data(), ballots, data.agents_count, data.m.substrates_count,
+							 data.m.mesh);
 	}
 
-	compute_result<dims>(data, numerators, denominators, factors, ballots, with_internalized);
+	compute_result<dims>(data, reduced_numerators, reduced_denominators, reduced_factors, numerators, denominators,
+						 factors, ballots, with_internalized);
 }
 
 void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recompute)
@@ -205,18 +214,21 @@ void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recomp
 
 	if (m.mesh.dims == 1)
 	{
-		simulate<1>(m.agents->get_agent_data(), numerators_.data(), denominators_.data(), factors_.data(),
-					ballots_.get(), recompute, compute_internalized_substrates_);
+		simulate<1>(m.agents->get_agent_data(), reduced_numerators_.data(), reduced_denominators_.data(),
+					reduced_factors_.data(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
+					recompute, compute_internalized_substrates_);
 	}
 	else if (m.mesh.dims == 2)
 	{
-		simulate<2>(m.agents->get_agent_data(), numerators_.data(), denominators_.data(), factors_.data(),
-					ballots_.get(), recompute, compute_internalized_substrates_);
+		simulate<2>(m.agents->get_agent_data(), reduced_numerators_.data(), reduced_denominators_.data(),
+					reduced_factors_.data(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
+					recompute, compute_internalized_substrates_);
 	}
 	else if (m.mesh.dims == 3)
 	{
-		simulate<3>(m.agents->get_agent_data(), numerators_.data(), denominators_.data(), factors_.data(),
-					ballots_.get(), recompute, compute_internalized_substrates_);
+		simulate<3>(m.agents->get_agent_data(), reduced_numerators_.data(), reduced_denominators_.data(),
+					reduced_factors_.data(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
+					recompute, compute_internalized_substrates_);
 	}
 }
 
@@ -266,6 +278,10 @@ void cell_solver::resize(const microenvironment& m)
 	numerators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
 	denominators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
 	factors_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
+
+	reduced_numerators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
+	reduced_denominators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
+	reduced_factors_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
 }
 
 void cell_solver::initialize(const microenvironment& m)
