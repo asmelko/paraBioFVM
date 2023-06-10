@@ -5,6 +5,39 @@
 
 using namespace biofvm;
 
+void make_agents(microenvironment& m, index_t count, bool conflict)
+{
+	index_t x = 0, y = 0, z = 0;
+
+	for (index_t i = 0; i < count; i++)
+	{
+		auto a = m.agents->add_agent();
+		a->position()[0] = x;
+		a->position()[1] = y;
+		a->position()[2] = z;
+
+		x += 20;
+		if (x >= m.mesh.bounding_box_maxs[0])
+		{
+			x -= m.mesh.bounding_box_maxs[0];
+			y += 20;
+		}
+		if (y >= m.mesh.bounding_box_maxs[1])
+		{
+			y -= m.mesh.bounding_box_maxs[1];
+			z += 20;
+		}
+	}
+
+	if (conflict)
+	{
+		auto a = m.agents->add_agent();
+		a->position()[0] = 0;
+		a->position()[1] = 0;
+		a->position()[2] = 0;
+	}
+}
+
 int main()
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 5000, 5000, 5000 }, { 20, 20, 20 });
@@ -24,6 +57,9 @@ int main()
 
 	m.diffustion_coefficients = std::move(diff_coefs);
 	m.decay_rates = std::move(decay_rates);
+	m.compute_internalized_substrates = true;
+
+	make_agents(m, 2'000'000, true);
 
 	solver s;
 
@@ -31,7 +67,7 @@ int main()
 
 	for (index_t i = 0; i < 100; ++i)
 	{
-		std::size_t diffusion_duration, gradient_duration;
+		std::size_t diffusion_duration, gradient_duration, secretion_duration;
 		{
 			auto start = std::chrono::high_resolution_clock::now();
 
@@ -52,8 +88,18 @@ int main()
 			gradient_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		}
 
-		std::cout << "Diffusion time: " << diffusion_duration << " ms,\t Gradient time: " << gradient_duration << " ms"
-				  << std::endl;
+		{
+			auto start = std::chrono::high_resolution_clock::now();
+
+			s.cell.simulate_secretion_and_uptake(m, i % 10 == 0);
+
+			auto end = std::chrono::high_resolution_clock::now();
+
+			secretion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		}
+
+		std::cout << "Diffusion time: " << diffusion_duration << " ms,\t Gradient time: " << gradient_duration
+				  << " ms,\t Secretion time: " << secretion_duration << " ms" << std::endl;
 	}
 
 	for (int i = 0; i < 5; i++)
