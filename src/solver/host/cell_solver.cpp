@@ -39,6 +39,7 @@ void clear_ballots(const real_t* __restrict__ cell_positions, index_t* __restric
 	auto ballot_l = noarr::scalar<index_t>() ^ typename layout_traits<dims>::grid_layout_t()
 					^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
 
+#pragma omp for
 	for (index_t i = 0; i < n; i++)
 	{
 		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * i, m);
@@ -62,6 +63,7 @@ void compute_intermediates(real_t* __restrict__ numerators, real_t* __restrict__
 						   const real_t* __restrict__ net_export_rates, const real_t* __restrict__ cell_volumes,
 						   real_t voxel_volume, real_t time_step, index_t n, index_t substrates_count)
 {
+#pragma omp for
 	for (index_t i = 0; i < n; i++)
 	{
 		for (index_t s = 0; s < substrates_count; s++)
@@ -89,6 +91,7 @@ void ballot_and_sum(real_t* __restrict__ reduced_numerators, real_t* __restrict_
 	auto ballot_l = noarr::scalar<index_t>() ^ typename layout_traits<dims>::grid_layout_t()
 					^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
 
+#pragma omp for
 	for (index_t i = 0; i < n; i++)
 	{
 		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * i, m);
@@ -186,6 +189,7 @@ void compute_result(agent_data& data, const real_t* reduced_numerators, const re
 
 	if (with_internalized && !is_conflict)
 	{
+#pragma omp for
 		for (index_t i = 0; i < data.agents_count; i++)
 		{
 			auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
@@ -200,6 +204,7 @@ void compute_result(agent_data& data, const real_t* reduced_numerators, const re
 
 	if (with_internalized)
 	{
+#pragma omp for
 		for (index_t i = 0; i < data.agents_count; i++)
 		{
 			auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
@@ -210,6 +215,7 @@ void compute_result(agent_data& data, const real_t* reduced_numerators, const re
 		}
 	}
 
+#pragma omp for
 	for (index_t i = 0; i < data.agents_count; i++)
 	{
 		auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
@@ -225,22 +231,26 @@ void simulate(agent_data& data, real_t* reduced_numerators, real_t* reduced_deno
 			  real_t* numerators, real_t* denominators, real_t* factors, index_t* ballots, bool recompute,
 			  bool with_internalized, bool* __restrict__ is_conflict)
 {
-	if (recompute)
+#pragma omp parallel
 	{
-		compute_intermediates(numerators, denominators, factors, data.secretion_rates.data(), data.uptake_rates.data(),
-							  data.saturation_densities.data(), data.net_export_rates.data(), data.volumes.data(),
-							  data.m.mesh.voxel_volume(), data.m.time_step, data.agents_count, data.m.substrates_count);
+		if (recompute)
+		{
+			compute_intermediates(numerators, denominators, factors, data.secretion_rates.data(),
+								  data.uptake_rates.data(), data.saturation_densities.data(),
+								  data.net_export_rates.data(), data.volumes.data(), data.m.mesh.voxel_volume(),
+								  data.m.time_step, data.agents_count, data.m.substrates_count);
 
-		clear_ballots<dims>(data.positions.data(), ballots, reduced_numerators, reduced_denominators, reduced_factors,
-							data.agents_count, data.m.mesh, data.m.substrates_count);
+			clear_ballots<dims>(data.positions.data(), ballots, reduced_numerators, reduced_denominators,
+								reduced_factors, data.agents_count, data.m.mesh, data.m.substrates_count);
 
-		ballot_and_sum<dims>(reduced_numerators, reduced_denominators, reduced_factors, numerators, denominators,
-							 factors, data.positions.data(), ballots, data.agents_count, data.m.substrates_count,
-							 data.m.mesh, is_conflict);
+			ballot_and_sum<dims>(reduced_numerators, reduced_denominators, reduced_factors, numerators, denominators,
+								 factors, data.positions.data(), ballots, data.agents_count, data.m.substrates_count,
+								 data.m.mesh, is_conflict);
+		}
+
+		compute_result<dims>(data, reduced_numerators, reduced_denominators, reduced_factors, numerators, denominators,
+							 factors, ballots, with_internalized, *is_conflict);
 	}
-
-	compute_result<dims>(data, reduced_numerators, reduced_denominators, reduced_factors, numerators, denominators,
-						 factors, ballots, with_internalized, *is_conflict);
 }
 
 void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recompute)
