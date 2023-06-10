@@ -47,6 +47,8 @@ class cell_solver
 	std::vector<real_t> reduced_denominators_;
 	std::vector<real_t> reduced_factors_;
 
+	bool is_conflict_;
+
 	std::unique_ptr<index_t[]> ballots_;
 
 	void resize(const microenvironment& m);
