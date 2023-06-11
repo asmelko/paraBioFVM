@@ -11,7 +11,7 @@ void make_agents(microenvironment& m, index_t count, bool conflict)
 
 	for (index_t i = 0; i < count; i++)
 	{
-		auto a = m.agents->add_agent();
+		auto a = m.agents->create_agent();
 		a->position()[0] = x;
 		a->position()[1] = y;
 		a->position()[2] = z;
@@ -31,7 +31,7 @@ void make_agents(microenvironment& m, index_t count, bool conflict)
 
 	if (conflict)
 	{
-		auto a = m.agents->add_agent();
+		auto a = m.agents->create_agent();
 		a->position()[0] = 0;
 		a->position()[1] = 0;
 		a->position()[2] = 0;

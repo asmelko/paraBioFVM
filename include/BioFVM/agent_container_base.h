@@ -29,7 +29,7 @@ protected:
 	index_t& get_agent_index(agent* agent);
 
 public:
-	virtual agent* add_agent() = 0;
+	virtual agent* create_agent() = 0;
 
 	virtual void remove_agent(agent* agent) = 0;
 
@@ -49,7 +49,9 @@ protected:
 	{}
 
 public:
-	virtual agent* add_agent() override
+	virtual agent* create_agent() override { return create(); }
+
+	agent_t* create()
 	{
 		agents_.emplace_back(std::make_unique<agent_t>(next_agent_id_++, data_, data_.agents_count));
 
