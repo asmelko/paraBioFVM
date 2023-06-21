@@ -73,7 +73,7 @@ public:
 		data_.remove(index_to_remove);
 	}
 
-	const std::vector<agent_t>& agents() const { return agents_; }
+	const std::vector<std::unique_ptr<agent_t>>& agents() const { return agents_; }
 
 	const agent_data_t& data() const { return data_; }
 };
