@@ -53,9 +53,9 @@ public:
 
 	agent_t* create()
 	{
-		agents_.emplace_back(std::make_unique<agent_t>(next_agent_id_++, data_, data_.agents_count));
-
 		data_.add();
+
+		agents_.emplace_back(std::make_unique<agent_t>(next_agent_id_++, data_, data_.agents_count - 1));
 
 		return agents_.back().get();
 	}
