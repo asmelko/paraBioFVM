@@ -32,6 +32,7 @@ public:
 	virtual agent* create_agent() = 0;
 
 	virtual void remove_agent(agent* agent) = 0;
+	virtual void remove_at(index_t index) = 0;
 
 	virtual ~agent_container_base() = default;
 };
@@ -64,13 +65,18 @@ public:
 	{
 		index_t index_to_remove = get_agent_index(agent);
 
-		get_agent_index(agents_.back().get()) = index_to_remove;
+		remove_at(index_to_remove);
+	}
 
-		std::swap(agents_[index_to_remove], agents_.back());
+	virtual void remove_at(index_t index) override
+	{
+		get_agent_index(agents_.back().get()) = index;
+
+		std::swap(agents_[index], agents_.back());
 
 		agents_.resize(agents_.size() - 1);
 
-		data_.remove(index_to_remove);
+		data_.remove(index);
 	}
 
 	const std::vector<std::unique_ptr<agent_t>>& agents() const { return agents_; }
