@@ -46,3 +46,12 @@ microenvironment::microenvironment(cartesian_mesh mesh, index_t substrates_count
 	else if (mesh.dims == 3)
 		initialize_substrate_densities<3>(substrate_densities.get(), initial_conditions, *this);
 }
+
+index_t microenvironment::find_substrate_index(const std::string& name) const
+{
+	for (index_t i = 0; i < substrates_count; i++)
+		if (substrates_names[i] == name)
+			return i;
+
+	return -1;
+}
