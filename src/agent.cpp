@@ -120,3 +120,5 @@ point_t<real_t, 3> agent::nearest_gradient(index_t substrate_index) const
 		};
 	}
 }
+
+index_t agent::index() const { return index_; }
