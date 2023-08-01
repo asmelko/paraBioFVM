@@ -12,7 +12,7 @@ class microenvironment_builder
 {
 	std::string name, time_units, space_units;
 
-	real_t time_step;
+	real_t time_step = 0.01;
 	std::optional<cartesian_mesh> mesh_;
 
 	std::vector<std::string> substrates_names;
