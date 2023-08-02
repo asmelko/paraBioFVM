@@ -38,6 +38,13 @@ point_t<index_t, 3> cartesian_mesh::voxel_position(point_t<real_t, 3> position) 
 			 (index_t)((position[2] - bounding_box_mins[2]) / voxel_shape[2]) };
 }
 
+point_t<real_t, 3> cartesian_mesh::voxel_center(point_t<index_t, 3> position) const
+{
+	return { (real_t)(position[0] * voxel_shape[0] + voxel_shape[0] / 2.0 + bounding_box_mins[0]),
+			 (real_t)(position[1] * voxel_shape[1] + voxel_shape[1] / 2.0 + bounding_box_mins[1]),
+			 (real_t)(position[2] * voxel_shape[2] + voxel_shape[2] / 2.0 + bounding_box_mins[2]) };
+}
+
 void cartesian_mesh::display_info()
 {
 	std::cout << std::endl << "Mesh information: " << std::endl;

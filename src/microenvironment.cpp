@@ -59,6 +59,32 @@ index_t microenvironment::find_substrate_index(const std::string& name) const
 	return -1;
 }
 
+real_t microenvironment::substrate_density_value(point_t<index_t, 3> position, index_t substrate_index) const
+{
+	if (mesh.dims == 1)
+	{
+		auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+		return (dens_l | noarr::get_at<'x', 's'>(substrate_densities.get(), position[0], substrate_index));
+	}
+	else if (mesh.dims == 2)
+	{
+		auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+		return (dens_l
+				| noarr::get_at<'x', 'y', 's'>(substrate_densities.get(), position[0], position[1], substrate_index));
+	}
+	else if (mesh.dims == 3)
+	{
+		auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+		return (dens_l
+				| noarr::get_at<'x', 'y', 'z', 's'>(substrate_densities.get(), position[0], position[1], position[2],
+													substrate_index));
+	}
+	return 0;
+}
+
 void microenvironment::display_info()
 {
 	auto get_initial_condition = [&](index_t s) {

@@ -22,6 +22,8 @@ struct cartesian_mesh
 
 	point_t<index_t, 3> voxel_position(point_t<real_t, 3> position) const;
 
+	point_t<real_t, 3> voxel_center(point_t<index_t, 3> position) const;
+
 	void display_info();
 };
 
