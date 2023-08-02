@@ -29,10 +29,14 @@ protected:
 	index_t& get_agent_index(agent* agent);
 
 public:
+	virtual index_t agents_count() const = 0;
+
 	virtual agent* create_agent() = 0;
 
 	virtual void remove_agent(agent* agent) = 0;
 	virtual void remove_at(index_t index) = 0;
+
+	virtual agent* get_agent_at(index_t index) = 0;
 
 	virtual ~agent_container_base() = default;
 };
@@ -50,6 +54,8 @@ protected:
 	{}
 
 public:
+	virtual index_t agents_count() const override { return (index_t)agents_.size(); }
+
 	virtual agent* create_agent() override { return create(); }
 
 	agent_t* create()
@@ -78,6 +84,10 @@ public:
 
 		data_.remove(index);
 	}
+
+	virtual agent* get_agent_at(index_t index) override { return get_at(index); }
+
+	agent_t* get_at(index_t index) { return agents_[index].get(); }
 
 	const std::vector<std::unique_ptr<agent_t>>& agents() const { return agents_; }
 
