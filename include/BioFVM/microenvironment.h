@@ -33,7 +33,7 @@ struct microenvironment
 
 	std::unique_ptr<real_t[]> substrate_densities;
 
-	std::unique_ptr<real_t[]> diffustion_coefficients;
+	std::unique_ptr<real_t[]> diffusion_coefficients;
 	std::unique_ptr<real_t[]> decay_rates;
 
 	std::unique_ptr<real_t[]> gradients;
@@ -53,6 +53,8 @@ struct microenvironment
 	bool compute_internalized_substrates;
 
 	index_t find_substrate_index(const std::string& name) const;
+
+	void display_info();
 };
 
 } // namespace biofvm

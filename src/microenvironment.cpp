@@ -1,5 +1,8 @@
 #include "microenvironment.h"
 
+#include <cmath>
+#include <iostream>
+
 #include <noarr/structures/extra/traverser.hpp>
 
 #include "agent_container.h"
@@ -27,7 +30,7 @@ microenvironment::microenvironment(cartesian_mesh mesh, index_t substrates_count
 	  substrates_count(substrates_count),
 	  time_step(time_step),
 	  substrate_densities(std::make_unique<real_t[]>(substrates_count * mesh.voxel_count())),
-	  diffustion_coefficients(nullptr),
+	  diffusion_coefficients(nullptr),
 	  decay_rates(nullptr),
 	  gradients(std::make_unique<real_t[]>(mesh.dims * substrates_count * mesh.voxel_count())),
 	  dirichlet_interior_voxels_count(0),
@@ -54,4 +57,55 @@ index_t microenvironment::find_substrate_index(const std::string& name) const
 			return i;
 
 	return -1;
+}
+
+void microenvironment::display_info()
+{
+	auto get_initial_condition = [&](index_t s) {
+		if (mesh.dims == 1)
+		{
+			auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
+			return (dens_l | noarr::get_at<'x', 's'>(substrate_densities.get(), 0, s));
+		}
+		else if (mesh.dims == 2)
+		{
+			auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
+			return (dens_l | noarr::get_at<'x', 'y', 's'>(substrate_densities.get(), 0, 0, s));
+		}
+		else if (mesh.dims == 3)
+		{
+			auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
+			return (dens_l | noarr::get_at<'x', 'y', 'z', 's'>(substrate_densities.get(), 0, 0, 0, s));
+		}
+		return (real_t)0;
+	};
+
+	std::cout << std::endl << "Microenvironment summary: " << name << ": " << std::endl;
+	mesh.display_info();
+	std::cout << "Densities: (" << substrates_count << " total)" << std::endl;
+	for (unsigned int i = 0; i < substrates_names.size(); i++)
+	{
+		std::cout << "   " << substrates_names[i] << ":" << std::endl
+				  << "     units: " << substrates_units[i] << std::endl
+				  << "     diffusion coefficient: " << diffusion_coefficients[i] << " " << space_units << "^2 / "
+				  << time_units << std::endl
+				  << "     decay rate: " << decay_rates[i] << " " << time_units << "^-1" << std::endl
+				  << "     diffusion length scale: " << std::sqrt(diffusion_coefficients[i] / (1e-12 + decay_rates[i]))
+				  << " " << space_units << std::endl
+				  << "     initial condition: " << get_initial_condition(i) << " " << substrates_units[i] << std::endl;
+		// 			  << "     boundary condition: " << default_microenvironment_options.Dirichlet_condition_vector[i]
+		// 			  << " " << substrates_units[i] << " (enabled: ";
+		// 	if (dirichlet_activation_vector[i] == true)
+		// 	{
+		// 		std::cout << "true";
+		// 	}
+		// 	else
+		// 	{
+		// 		std::cout << "false";
+		// 	}
+		// 	std::cout << ")" << std::endl;
+	}
+	std::cout << std::endl;
+
+	return;
 }

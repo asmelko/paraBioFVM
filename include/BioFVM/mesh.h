@@ -21,6 +21,8 @@ struct cartesian_mesh
 	index_t voxel_volume() const;
 
 	point_t<index_t, 3> voxel_position(point_t<real_t, 3> position) const;
+
+	void display_info();
 };
 
 } // namespace biofvm

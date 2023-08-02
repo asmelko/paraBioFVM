@@ -1,5 +1,7 @@
 #include "mesh.h"
 
+#include <iostream>
+
 using namespace biofvm;
 
 cartesian_mesh::cartesian_mesh(index_t dims, point_t<index_t, 3> bounding_box_mins,
@@ -34,4 +36,35 @@ point_t<index_t, 3> cartesian_mesh::voxel_position(point_t<real_t, 3> position) 
 	return { (index_t)((position[0] - bounding_box_mins[0]) / voxel_shape[0]),
 			 (index_t)((position[1] - bounding_box_mins[1]) / voxel_shape[1]),
 			 (index_t)((position[2] - bounding_box_mins[2]) / voxel_shape[2]) };
+}
+
+void cartesian_mesh::display_info()
+{
+	std::cout << std::endl << "Mesh information: " << std::endl;
+	std::cout << "   dimensions: " << dims << std::endl;
+	std::cout << "Domain: "
+			  << "[" << bounding_box_mins[0] << "," << bounding_box_maxs[0] << "] "
+			  << "units"
+			  << " x "
+			  << "[" << bounding_box_mins[1] << "," << bounding_box_maxs[1] << "] "
+			  << "units"
+			  << " x "
+			  << "[" << bounding_box_mins[2] << "," << bounding_box_maxs[2] << "] "
+			  << "units" << std::endl
+			  << "   resolution: dx = " << voxel_shape[0] << " "
+			  << "units"
+			  << ", dy = " << voxel_shape[1] << " "
+			  << "units"
+			  << ", dz = " << voxel_shape[2] << " "
+			  << "units";
+	std::cout << std::endl
+			  << "   voxels: " << voxel_count() << std::endl
+			  << "   volume: "
+			  << (std::size_t)(bounding_box_maxs[0] - bounding_box_mins[0])
+					 * (std::size_t)(bounding_box_maxs[1] - bounding_box_mins[1])
+					 * (std::size_t)(bounding_box_maxs[2] - bounding_box_mins[2])
+			  << " cubic "
+			  << "units" << std::endl;
+
+	return;
 }
