@@ -1,6 +1,7 @@
 #include "microenvironment_builder.h"
 
 #include <algorithm>
+#include <cstring>
 #include <stdexcept>
 #include <type_traits>
 
@@ -162,6 +163,13 @@ microenvironment microenvironment_builder::build()
 
 	m.substrates_names = std::move(substrates_names);
 	m.substrates_units = std::move(substrates_units);
+
+	m.diffusion_coefficients = std::make_unique<real_t[]>(diffusion_coefficients.size());
+	std::memcpy(m.diffusion_coefficients.get(), diffusion_coefficients.data(),
+				diffusion_coefficients.size() * sizeof(real_t));
+
+	m.decay_rates = std::make_unique<real_t[]>(decay_rates.size());
+	std::memcpy(m.decay_rates.get(), decay_rates.data(), decay_rates.size() * sizeof(real_t));
 
 	m.dirichlet_interior_voxels_count = dirichlet_voxels.size() / m.mesh.dims;
 	m.dirichlet_interior_voxels = std::make_unique<index_t[]>(dirichlet_voxels.size());
