@@ -51,7 +51,7 @@ void bulk_solver::solve_1d(microenvironment& m)
 		supply_target_densities_f_(m, { x, 0, 0 }, supply_target_densities_.get());
 
 		solve_single(m.substrate_densities.get(), supply_rates_.get(), uptake_rates_.get(),
-					 supply_target_densities_.get(), m.time_step, dens_l ^ noarr::fix<'x'>(x));
+					 supply_target_densities_.get(), m.diffusion_time_step, dens_l ^ noarr::fix<'x'>(x));
 	}
 }
 
@@ -68,7 +68,8 @@ void bulk_solver::solve_2d(microenvironment& m)
 			supply_target_densities_f_(m, { x, y, 0 }, supply_target_densities_.get());
 
 			solve_single(m.substrate_densities.get(), supply_rates_.get(), uptake_rates_.get(),
-						 supply_target_densities_.get(), m.time_step, dens_l ^ noarr::fix<'x'>(x) ^ noarr::fix<'y'>(y));
+						 supply_target_densities_.get(), m.diffusion_time_step,
+						 dens_l ^ noarr::fix<'x'>(x) ^ noarr::fix<'y'>(y));
 		}
 	}
 }
@@ -88,7 +89,7 @@ void bulk_solver::solve_3d(microenvironment& m)
 				supply_target_densities_f_(m, { x, y, z }, supply_target_densities_.get());
 
 				solve_single(m.substrate_densities.get(), supply_rates_.get(), uptake_rates_.get(),
-							 supply_target_densities_.get(), m.time_step,
+							 supply_target_densities_.get(), m.diffusion_time_step,
 							 dens_l ^ noarr::fix<'x'>(x) ^ noarr::fix<'y'>(y) ^ noarr::fix<'z'>(z));
 			}
 		}

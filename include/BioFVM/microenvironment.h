@@ -29,7 +29,7 @@ struct microenvironment
 	agent_container_ptr agents;
 
 	index_t substrates_count;
-	real_t time_step;
+	real_t diffusion_time_step;
 
 	std::unique_ptr<real_t[]> substrate_densities;
 

@@ -78,7 +78,7 @@ void diffusion_solver::precompute_values(std::unique_ptr<real_t[]>& b, std::uniq
 
 		for (index_t x = 0; x < copies; x++)
 			for (index_t s = 0; s < m.substrates_count; s++)
-				b[x * m.substrates_count + s] = 1 / (1 + m.decay_rates[s] * m.time_step / dims);
+				b[x * m.substrates_count + s] = 1 / (1 + m.decay_rates[s] * m.diffusion_time_step / dims);
 
 		return;
 	}
@@ -97,7 +97,7 @@ void diffusion_solver::precompute_values(std::unique_ptr<real_t[]>& b, std::uniq
 	// compute c_i
 	for (index_t x = 0; x < copies; x++)
 		for (index_t s = 0; s < m.substrates_count; s++)
-			c[x * m.substrates_count + s] = -m.time_step * m.diffusion_coefficients[s] / (shape * shape);
+			c[x * m.substrates_count + s] = -m.diffusion_time_step * m.diffusion_coefficients[s] / (shape * shape);
 
 	// compute b_i
 	{
@@ -106,15 +106,16 @@ void diffusion_solver::precompute_values(std::unique_ptr<real_t[]>& b, std::uniq
 		for (index_t i : indices)
 			for (index_t x = 0; x < copies; x++)
 				for (index_t s = 0; s < m.substrates_count; s++)
-					b_diag.at<'i', 'x', 's'>(i, x, s) = 1 + m.decay_rates[s] * m.time_step / dims
-														+ m.time_step * m.diffusion_coefficients[s] / (shape * shape);
+					b_diag.at<'i', 'x', 's'>(i, x, s) =
+						1 + m.decay_rates[s] * m.diffusion_time_step / dims
+						+ m.diffusion_time_step * m.diffusion_coefficients[s] / (shape * shape);
 
 		for (index_t i = 1; i < n - 1; i++)
 			for (index_t x = 0; x < copies; x++)
 				for (index_t s = 0; s < m.substrates_count; s++)
 					b_diag.at<'i', 'x', 's'>(i, x, s) =
-						1 + m.decay_rates[s] * m.time_step / dims
-						+ 2 * m.time_step * m.diffusion_coefficients[s] / (shape * shape);
+						1 + m.decay_rates[s] * m.diffusion_time_step / dims
+						+ 2 * m.diffusion_time_step * m.diffusion_coefficients[s] / (shape * shape);
 	}
 
 	// compute b_i' and e_i

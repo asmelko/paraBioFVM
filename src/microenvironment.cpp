@@ -28,7 +28,7 @@ microenvironment::microenvironment(cartesian_mesh mesh, index_t substrates_count
 	: mesh(mesh),
 	  agents(std::make_unique<agent_container>(*this)),
 	  substrates_count(substrates_count),
-	  time_step(time_step),
+	  diffusion_time_step(time_step),
 	  substrate_densities(std::make_unique<real_t[]>(substrates_count * mesh.voxel_count())),
 	  diffusion_coefficients(nullptr),
 	  decay_rates(nullptr),

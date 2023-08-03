@@ -229,7 +229,8 @@ void simulate(agent_data& data, real_t* reduced_numerators, real_t* reduced_deno
 	{
 		compute_intermediates(numerators, denominators, factors, data.secretion_rates.data(), data.uptake_rates.data(),
 							  data.saturation_densities.data(), data.net_export_rates.data(), data.volumes.data(),
-							  data.m.mesh.voxel_volume(), data.m.time_step, data.agents_count, data.m.substrates_count);
+							  data.m.mesh.voxel_volume(), data.m.diffusion_time_step, data.agents_count,
+							  data.m.substrates_count);
 
 		clear_ballots<dims>(data.positions.data(), ballots, reduced_numerators, reduced_denominators, reduced_factors,
 							data.agents_count, data.m.mesh, data.m.substrates_count);
