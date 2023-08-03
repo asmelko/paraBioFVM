@@ -784,7 +784,7 @@ TEST_P(host_agents, simple_D1)
 	cartesian_mesh mesh(1, { 0, 0, 0 }, { 60, 20, 20 }, { 20, 20, 20 });
 
 	auto m = default_microenv(mesh);
-	m.time_step = 0.01;
+	m.diffusion_time_step = 0.01;
 	m.compute_internalized_substrates = compute_internalized;
 
 	index_t substrates_count = 2;
@@ -860,7 +860,7 @@ TEST_P(host_agents, simple_D2)
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 60, 60, 20 }, { 20, 20, 20 });
 
 	auto m = default_microenv(mesh);
-	m.time_step = 0.01;
+	m.diffusion_time_step = 0.01;
 	m.compute_internalized_substrates = compute_internalized;
 
 	index_t substrates_count = 2;
@@ -936,7 +936,7 @@ TEST_P(host_agents, simple_D3)
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 60, 60, 60 }, { 20, 20, 20 });
 
 	auto m = default_microenv(mesh);
-	m.time_step = 0.01;
+	m.diffusion_time_step = 0.01;
 	m.compute_internalized_substrates = compute_internalized;
 
 	index_t substrates_count = 2;
@@ -1012,7 +1012,7 @@ TEST_P(host_agents, conflict)
 	cartesian_mesh mesh(1, { 0, 0, 0 }, { 60, 20, 20 }, { 20, 20, 20 });
 
 	auto m = default_microenv(mesh);
-	m.time_step = 0.01;
+	m.diffusion_time_step = 0.01;
 	m.compute_internalized_substrates = compute_internalized;
 
 	index_t substrates_count = 2;

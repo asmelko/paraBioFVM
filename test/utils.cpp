@@ -9,7 +9,7 @@ namespace biofvm {
 
 microenvironment default_microenv(cartesian_mesh mesh)
 {
-	real_t diffusion_time_step = 5;
+	real_t diffusion_diffusion_time_step = 5;
 	index_t substrates_count = 2;
 
 	auto diff_coefs = std::make_unique<real_t[]>(2);
@@ -23,8 +23,8 @@ microenvironment default_microenv(cartesian_mesh mesh)
 	initial_conds[0] = 1;
 	initial_conds[1] = 1;
 
-	microenvironment m(mesh, substrates_count, diffusion_time_step, initial_conds.get());
-	m.diffustion_coefficients = std::move(diff_coefs);
+	microenvironment m(mesh, substrates_count, diffusion_diffusion_time_step, initial_conds.get());
+	m.diffusion_coefficients = std::move(diff_coefs);
 	m.decay_rates = std::move(decay_rates);
 
 	return m;
@@ -32,7 +32,7 @@ microenvironment default_microenv(cartesian_mesh mesh)
 
 microenvironment biorobots_microenv(cartesian_mesh mesh)
 {
-	real_t diffusion_time_step = 0.01;
+	real_t diffusion_diffusion_time_step = 0.01;
 	index_t substrates_count = 2;
 
 	auto diff_coefs = std::make_unique<real_t[]>(2);
@@ -46,8 +46,8 @@ microenvironment biorobots_microenv(cartesian_mesh mesh)
 	initial_conds[0] = 0;
 	initial_conds[1] = 0;
 
-	microenvironment m(mesh, substrates_count, diffusion_time_step, initial_conds.get());
-	m.diffustion_coefficients = std::move(diff_coefs);
+	microenvironment m(mesh, substrates_count, diffusion_diffusion_time_step, initial_conds.get());
+	m.diffusion_coefficients = std::move(diff_coefs);
 	m.decay_rates = std::move(decay_rates);
 
 	return m;
@@ -109,14 +109,14 @@ void compute_expected_agent_internalized_1d(microenvironment& m, std::vector<rea
 		for (index_t s = 0; s < m.substrates_count; s++)
 		{
 			auto num = agent_data.secretion_rates[i * m.substrates_count + s]
-					   * agent_data.saturation_densities[i * m.substrates_count + s] * m.time_step
+					   * agent_data.saturation_densities[i * m.substrates_count + s] * m.diffusion_time_step
 					   * agent_data.volumes[i];
 
 			auto denom = (agent_data.secretion_rates[i * m.substrates_count + s]
 						  + agent_data.uptake_rates[i * m.substrates_count + s])
-						 * m.time_step * agent_data.volumes[i] / m.mesh.voxel_volume();
+						 * m.diffusion_time_step * agent_data.volumes[i] / m.mesh.voxel_volume();
 
-			auto factor = agent_data.net_export_rates[i * m.substrates_count + s] * m.time_step;
+			auto factor = agent_data.net_export_rates[i * m.substrates_count + s] * m.diffusion_time_step;
 
 			point_t<real_t, 3> pos { agent_data.positions[i], 0, 0 };
 			auto mesh_idx = m.mesh.voxel_position(pos);
@@ -148,15 +148,15 @@ std::vector<real_t> compute_expected_agent_densities_1d(microenvironment& m)
 				if (agent_data.positions[i] == x)
 				{
 					num += agent_data.secretion_rates[i * m.substrates_count + s]
-						   * agent_data.saturation_densities[i * m.substrates_count + s] * m.time_step
+						   * agent_data.saturation_densities[i * m.substrates_count + s] * m.diffusion_time_step
 						   * agent_data.volumes[i] / m.mesh.voxel_volume();
 
 					denom += (agent_data.secretion_rates[i * m.substrates_count + s]
 							  + agent_data.uptake_rates[i * m.substrates_count + s])
-							 * m.time_step * agent_data.volumes[i] / m.mesh.voxel_volume();
+							 * m.diffusion_time_step * agent_data.volumes[i] / m.mesh.voxel_volume();
 
-					factor +=
-						agent_data.net_export_rates[i * m.substrates_count + s] * m.time_step / m.mesh.voxel_volume();
+					factor += agent_data.net_export_rates[i * m.substrates_count + s] * m.diffusion_time_step
+							  / m.mesh.voxel_volume();
 				}
 			}
 			expected_densities[x * m.substrates_count + s] =
