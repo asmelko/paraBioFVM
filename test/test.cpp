@@ -29,6 +29,7 @@ TEST_P(host_diffusion_solver, D1_uniform)
 
 	s.initialize(m, GetParam());
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -54,6 +55,7 @@ TEST_P(host_diffusion_solver, D2_uniform)
 
 	s.initialize(m, GetParam());
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -79,6 +81,7 @@ TEST_P(host_diffusion_solver, D3_uniform)
 
 	s.initialize(m, GetParam());
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -114,6 +117,7 @@ TEST_P(host_diffusion_solver, D1_random)
 
 	s.initialize(m, GetParam());
 
+#pragma omp parallel
 	s.solve(m);
 
 	std::vector<float> expected = {
@@ -151,6 +155,7 @@ TEST_P(host_diffusion_solver, D2_random)
 
 	s.initialize(m, GetParam());
 
+#pragma omp parallel
 	s.solve(m);
 
 	std::vector<float> expected = { 0.1948319355,  1.1899772978,  2.1441254507,	 3.1335099015,	4.0934189658,
@@ -193,6 +198,7 @@ TEST_P(host_diffusion_solver, D3_random)
 
 	s.initialize(m, GetParam());
 
+#pragma omp parallel
 	s.solve(m);
 
 	std::vector<float> expected = {
@@ -233,6 +239,7 @@ TEST(host_dirichlet_solver, one_cond_D1)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -262,6 +269,7 @@ TEST(host_dirichlet_solver, one_cond_D2)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -308,6 +316,7 @@ TEST(host_dirichlet_solver, one_cond_D3)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -365,6 +374,7 @@ TEST(host_dirichlet_solver, multiple_cond_D1)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -394,6 +404,7 @@ TEST(host_dirichlet_solver, multiple_cond_D2)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -446,6 +457,7 @@ TEST(host_dirichlet_solver, multiple_cond_D3)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.solve(m);
 
 	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -496,6 +508,7 @@ TEST(host_gradient_solver, D1)
 		(dens_l | noarr::get_at<'s', 'x'>(m.substrate_densities.get(), 1, m.mesh.grid_shape[0] - 1 - x)) = x * x;
 	}
 
+#pragma omp parallel
 	gradient_solver::solve(m);
 
 	auto grad_l = layout_traits<1>::construct_gradient_layout(substrates_count, mesh.grid_shape);
@@ -534,6 +547,7 @@ TEST(host_gradient_solver, D2)
 			(dens_l | noarr::get_at<'s', 'x', 'y'>(m.substrate_densities.get(), 1, x, y)) = get_dens(x, y, 1);
 		}
 
+#pragma omp parallel
 	gradient_solver::solve(m);
 
 	auto grad_l = layout_traits<2>::construct_gradient_layout(substrates_count, mesh.grid_shape);
@@ -586,6 +600,7 @@ TEST(host_gradient_solver, D3)
 					get_dens(x, y, z, 1);
 			}
 
+#pragma omp parallel
 	gradient_solver::solve(m);
 
 	auto grad_l = layout_traits<3>::construct_gradient_layout(substrates_count, mesh.grid_shape);
@@ -637,6 +652,7 @@ TEST(host_dirichlet_solver, boundaries_D1)
 	add_boundary_dirichlet(m, substrates_count, 0, true, 4);
 	add_boundary_dirichlet(m, substrates_count, 0, false, 5);
 
+#pragma omp parallel
 	dirichlet_solver::solve(m);
 
 	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -668,6 +684,7 @@ TEST(host_dirichlet_solver, boundaries_D2)
 	add_boundary_dirichlet(m, substrates_count, 1, true, 6);
 	add_boundary_dirichlet(m, substrates_count, 1, false, 7);
 
+#pragma omp parallel
 	dirichlet_solver::solve(m);
 
 	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -721,6 +738,7 @@ TEST(host_dirichlet_solver, boundaries_D3)
 	add_boundary_dirichlet(m, substrates_count, 2, true, 8);
 	add_boundary_dirichlet(m, substrates_count, 2, false, 9);
 
+#pragma omp parallel
 	dirichlet_solver::solve(m);
 
 	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -805,6 +823,7 @@ TEST_P(host_agents, simple_D1)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.simulate_secretion_and_uptake(m, true);
 
 	if (compute_internalized)
@@ -828,6 +847,7 @@ TEST_P(host_agents, simple_D1)
 	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 0)), 366.964463);
 	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 1)), 1);
 
+#pragma omp parallel
 	s.simulate_secretion_and_uptake(m, recompute);
 
 	if (compute_internalized)
@@ -881,6 +901,7 @@ TEST_P(host_agents, simple_D2)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.simulate_secretion_and_uptake(m, true);
 
 	if (compute_internalized)
@@ -904,6 +925,7 @@ TEST_P(host_agents, simple_D2)
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(2, 2, 0)), 366.964463);
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(2, 2, 1)), 1);
 
+#pragma omp parallel
 	s.simulate_secretion_and_uptake(m, recompute);
 
 	if (compute_internalized)
@@ -957,6 +979,7 @@ TEST_P(host_agents, simple_D3)
 
 	s.initialize(m);
 
+#pragma omp parallel
 	s.simulate_secretion_and_uptake(m, true);
 
 	if (compute_internalized)
@@ -980,6 +1003,7 @@ TEST_P(host_agents, simple_D3)
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(2, 2, 2, 0)), 366.964463);
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(2, 2, 2, 1)), 1);
 
+#pragma omp parallel
 	s.simulate_secretion_and_uptake(m, recompute);
 
 	if (compute_internalized)
@@ -1045,6 +1069,7 @@ TEST_P(host_agents, conflict)
 
 	compute_expected_agent_internalized_1d(m, expected_internalized);
 
+#pragma omp parallel
 	s.simulate_secretion_and_uptake(m, true);
 
 	if (compute_internalized)
@@ -1068,6 +1093,7 @@ TEST_P(host_agents, conflict)
 
 	compute_expected_agent_internalized_1d(m, expected_internalized);
 
+#pragma omp parallel
 	s.simulate_secretion_and_uptake(m, recompute);
 
 	if (compute_internalized)

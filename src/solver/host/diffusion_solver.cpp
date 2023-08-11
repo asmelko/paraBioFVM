@@ -189,9 +189,9 @@ void solve_slice_omp(real_t* __restrict__ densities, const real_t* __restrict__ 
 	auto diag_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'s'>(substrates_count) ^ noarr::sized_vector<'i'>(n);
 
 #pragma omp for
-	for (index_t i = 1; i < n; i++)
+	for (index_t s = 0; s < substrates_count; s++)
 	{
-		for (index_t s = 0; s < substrates_count; s++)
+		for (index_t i = 1; i < n; i++)
 		{
 			(dens_l | noarr::get_at<swipe_dim, 's'>(densities, i, s)) =
 				(dens_l | noarr::get_at<swipe_dim, 's'>(densities, i, s))
@@ -209,9 +209,9 @@ void solve_slice_omp(real_t* __restrict__ densities, const real_t* __restrict__ 
 	}
 
 #pragma omp for
-	for (index_t i = n - 2; i >= 0; i--)
+	for (index_t s = 0; s < substrates_count; s++)
 	{
-		for (index_t s = 0; s < substrates_count; s++)
+		for (index_t i = n - 2; i >= 0; i--)
 		{
 			(dens_l | noarr::get_at<swipe_dim, 's'>(densities, i, s)) =
 				((dens_l | noarr::get_at<swipe_dim, 's'>(densities, i, s))

@@ -68,38 +68,42 @@ int main()
 	for (index_t i = 0; i < 100; ++i)
 	{
 		std::size_t diffusion_duration, gradient_duration, secretion_duration;
+#pragma omp parallel private(diffusion_duration, gradient_duration, secretion_duration)
 		{
-			auto start = std::chrono::high_resolution_clock::now();
+			{
+				auto start = std::chrono::high_resolution_clock::now();
 
-			s.diffusion.solve(m);
+				s.diffusion.solve(m);
 
-			auto end = std::chrono::high_resolution_clock::now();
+				auto end = std::chrono::high_resolution_clock::now();
 
-			diffusion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+				diffusion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			}
+
+			{
+				auto start = std::chrono::high_resolution_clock::now();
+
+				s.gradient.solve(m);
+
+				auto end = std::chrono::high_resolution_clock::now();
+
+				gradient_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			}
+
+			{
+				auto start = std::chrono::high_resolution_clock::now();
+
+				s.cell.simulate_secretion_and_uptake(m, i % 10 == 0);
+
+				auto end = std::chrono::high_resolution_clock::now();
+
+				secretion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			}
+
+#pragma omp master
+			std::cout << "Diffusion time: " << diffusion_duration << " ms,\t Gradient time: " << gradient_duration
+					  << " ms,\t Secretion time: " << secretion_duration << " ms" << std::endl;
 		}
-
-		{
-			auto start = std::chrono::high_resolution_clock::now();
-
-			s.gradient.solve(m);
-
-			auto end = std::chrono::high_resolution_clock::now();
-
-			gradient_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		}
-
-		{
-			auto start = std::chrono::high_resolution_clock::now();
-
-			s.cell.simulate_secretion_and_uptake(m, i % 10 == 0);
-
-			auto end = std::chrono::high_resolution_clock::now();
-
-			secretion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		}
-
-		std::cout << "Diffusion time: " << diffusion_duration << " ms,\t Gradient time: " << gradient_duration
-				  << " ms,\t Secretion time: " << secretion_duration << " ms" << std::endl;
 	}
 
 	for (int i = 0; i < 5; i++)
