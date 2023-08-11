@@ -1,7 +1,10 @@
 #include "cell_solver.h"
 
+#include <atomic>
+
 #include "../../traits.h"
 #include "microenvironment.h"
+#include "types.h"
 
 using namespace biofvm;
 
@@ -31,27 +34,29 @@ auto fix_dims(const real_t* cell_position, const cartesian_mesh& m)
 }
 
 template <index_t dims>
-void clear_ballots(const real_t* __restrict__ cell_positions, index_t* __restrict__ ballots,
-				   real_t* __restrict__ reduced_numerators, real_t* __restrict__ reduced_denominators,
-				   real_t* __restrict__ reduced_factors, index_t n, const cartesian_mesh& m,
+void clear_ballots(const real_t* __restrict__ cell_positions, std::atomic<index_t>* __restrict__ ballots,
+				   std::atomic<real_t>* __restrict__ reduced_numerators,
+				   std::atomic<real_t>* __restrict__ reduced_denominators,
+				   std::atomic<real_t>* __restrict__ reduced_factors, index_t n, const cartesian_mesh& m,
 				   index_t substrate_densities)
 {
-	auto ballot_l = noarr::scalar<index_t>() ^ typename layout_traits<dims>::grid_layout_t()
+	auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
 					^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
 
+#pragma omp for
 	for (index_t i = 0; i < n; i++)
 	{
 		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * i, m);
 
-		index_t& b = b_l | noarr::get_at(ballots);
+		auto& b = b_l | noarr::get_at(ballots);
 
-		b = no_ballot;
+		b.store(no_ballot);
 
 		for (index_t s = 0; s < substrate_densities; s++)
 		{
-			reduced_numerators[i * substrate_densities + s] = 0;
-			reduced_denominators[i * substrate_densities + s] = 0;
-			reduced_factors[i * substrate_densities + s] = 0;
+			reduced_numerators[i * substrate_densities + s].store(0);
+			reduced_denominators[i * substrate_densities + s].store(0);
+			reduced_factors[i * substrate_densities + s].store(0);
 		}
 	}
 }
@@ -62,6 +67,7 @@ void compute_intermediates(real_t* __restrict__ numerators, real_t* __restrict__
 						   const real_t* __restrict__ net_export_rates, const real_t* __restrict__ cell_volumes,
 						   real_t voxel_volume, real_t time_step, index_t n, index_t substrates_count)
 {
+#pragma omp for
 	for (index_t i = 0; i < n; i++)
 	{
 		for (index_t s = 0; s < substrates_count; s++)
@@ -80,41 +86,44 @@ void compute_intermediates(real_t* __restrict__ numerators, real_t* __restrict__
 }
 
 template <index_t dims>
-void ballot_and_sum(real_t* __restrict__ reduced_numerators, real_t* __restrict__ reduced_denominators,
-					real_t* __restrict__ reduced_factors, const real_t* __restrict__ numerators,
+void ballot_and_sum(std::atomic<real_t>* __restrict__ reduced_numerators,
+					std::atomic<real_t>* __restrict__ reduced_denominators,
+					std::atomic<real_t>* __restrict__ reduced_factors, const real_t* __restrict__ numerators,
 					const real_t* __restrict__ denominators, const real_t* __restrict__ factors,
-					const real_t* __restrict__ cell_positions, index_t* __restrict__ ballots, index_t n,
-					index_t substrates_count, const cartesian_mesh& m, bool* __restrict__ is_conflict)
+					const real_t* __restrict__ cell_positions, std::atomic<index_t>* __restrict__ ballots, index_t n,
+					index_t substrates_count, const cartesian_mesh& m, std::atomic<bool>* __restrict__ is_conflict)
 {
-	auto ballot_l = noarr::scalar<index_t>() ^ typename layout_traits<dims>::grid_layout_t()
+	auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
 					^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
 
+#pragma omp for
 	for (index_t i = 0; i < n; i++)
 	{
 		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * i, m);
 
-		index_t& b = b_l | noarr::get_at(ballots);
+		auto& b = b_l | noarr::get_at(ballots);
 
-		if (b == no_ballot)
+		auto expected = no_ballot;
+		bool success = b.compare_exchange_strong(expected, i);
+
+		if (success)
 		{
-			b = i;
-
 			for (index_t s = 0; s < substrates_count; s++)
 			{
-				reduced_numerators[i * substrates_count + s] += numerators[i * substrates_count + s];
-				reduced_denominators[i * substrates_count + s] += denominators[i * substrates_count + s] + 1;
-				reduced_factors[i * substrates_count + s] += factors[i * substrates_count + s];
+				reduced_numerators[i * substrates_count + s].fetch_add(numerators[i * substrates_count + s]);
+				reduced_denominators[i * substrates_count + s].fetch_add(denominators[i * substrates_count + s] + 1);
+				reduced_factors[i * substrates_count + s].fetch_add(factors[i * substrates_count + s]);
 			}
 		}
 		else
 		{
-			is_conflict[0] = true;
+			is_conflict[0].store(true);
 
 			for (index_t s = 0; s < substrates_count; s++)
 			{
-				reduced_numerators[b * substrates_count + s] += numerators[i * substrates_count + s];
-				reduced_denominators[b * substrates_count + s] += denominators[i * substrates_count + s];
-				reduced_factors[b * substrates_count + s] += factors[i * substrates_count + s];
+				reduced_numerators[expected * substrates_count + s].fetch_add(numerators[i * substrates_count + s]);
+				reduced_denominators[expected * substrates_count + s].fetch_add(denominators[i * substrates_count + s]);
+				reduced_factors[expected * substrates_count + s].fetch_add(factors[i * substrates_count + s]);
 			}
 		}
 	}
@@ -138,9 +147,9 @@ void compute_internalized(real_t* __restrict__ internalized_substrates, const re
 }
 
 template <typename density_layout_t>
-void compute_densities(real_t* __restrict__ substrate_densities, const real_t* __restrict__ numerator,
-					   const real_t* __restrict__ denominator, const real_t* __restrict__ factor, bool has_ballot,
-					   density_layout_t dens_l)
+void compute_densities(real_t* __restrict__ substrate_densities, const std::atomic<real_t>* __restrict__ numerator,
+					   const std::atomic<real_t>* __restrict__ denominator,
+					   const std::atomic<real_t>* __restrict__ factor, bool has_ballot, density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 
@@ -149,15 +158,17 @@ void compute_densities(real_t* __restrict__ substrate_densities, const real_t* _
 		for (index_t s = 0; s < substrates_count; s++)
 		{
 			(dens_l | noarr::get_at<'s'>(substrate_densities, s)) =
-				((dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s]) / denominator[s] + factor[s];
+				((dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s].load()) / denominator[s].load()
+				+ factor[s].load();
 		}
 	}
 }
 
 template <typename density_layout_t>
 void compute_fused(real_t* __restrict__ substrate_densities, real_t* __restrict__ internalized_substrates,
-				   const real_t* __restrict__ numerator, const real_t* __restrict__ denominator,
-				   const real_t* __restrict__ factor, index_t voxel_volume, density_layout_t dens_l)
+				   const std::atomic<real_t>* __restrict__ numerator,
+				   const std::atomic<real_t>* __restrict__ denominator, const std::atomic<real_t>* __restrict__ factor,
+				   index_t voxel_volume, density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 
@@ -165,19 +176,22 @@ void compute_fused(real_t* __restrict__ substrate_densities, real_t* __restrict_
 	{
 		internalized_substrates[s] -=
 			voxel_volume
-			* (((1 - denominator[s]) * (dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s])
-				   / (denominator[s])
-			   + factor[s]);
+			* (((1 - denominator[s].load()) * (dens_l | noarr::get_at<'s'>(substrate_densities, s))
+				+ numerator[s].load())
+				   / (denominator[s].load())
+			   + factor[s].load());
 
 		(dens_l | noarr::get_at<'s'>(substrate_densities, s)) =
-			((dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s]) / denominator[s] + factor[s];
+			((dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s].load()) / denominator[s].load()
+			+ factor[s].load();
 	}
 }
 
 template <index_t dims>
-void compute_result(agent_data& data, const real_t* reduced_numerators, const real_t* reduced_denominators,
-					const real_t* reduced_factors, const real_t* numerators, const real_t* denominators,
-					const real_t* factors, const index_t* ballots, bool with_internalized, bool is_conflict)
+void compute_result(agent_data& data, const std::atomic<real_t>* reduced_numerators,
+					const std::atomic<real_t>* reduced_denominators, const std::atomic<real_t>* reduced_factors,
+					const real_t* numerators, const real_t* denominators, const real_t* factors,
+					const std::atomic<index_t>* ballots, bool with_internalized, bool is_conflict)
 {
 	index_t voxel_volume = data.m.mesh.voxel_volume(); // expecting that voxel volume is the same for all voxels
 	auto dens_l = layout_traits<dims>::construct_density_layout(data.m.substrates_count, data.m.mesh.grid_shape);
@@ -186,6 +200,7 @@ void compute_result(agent_data& data, const real_t* reduced_numerators, const re
 
 	if (with_internalized && !is_conflict)
 	{
+#pragma omp for
 		for (index_t i = 0; i < data.agents_count; i++)
 		{
 			auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
@@ -200,6 +215,7 @@ void compute_result(agent_data& data, const real_t* reduced_numerators, const re
 
 	if (with_internalized)
 	{
+#pragma omp for
 		for (index_t i = 0; i < data.agents_count; i++)
 		{
 			auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
@@ -210,6 +226,7 @@ void compute_result(agent_data& data, const real_t* reduced_numerators, const re
 		}
 	}
 
+#pragma omp for
 	for (index_t i = 0; i < data.agents_count; i++)
 	{
 		auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
@@ -221,9 +238,10 @@ void compute_result(agent_data& data, const real_t* reduced_numerators, const re
 }
 
 template <index_t dims>
-void simulate(agent_data& data, real_t* reduced_numerators, real_t* reduced_denominators, real_t* reduced_factors,
-			  real_t* numerators, real_t* denominators, real_t* factors, index_t* ballots, bool recompute,
-			  bool with_internalized, bool* __restrict__ is_conflict)
+void simulate(agent_data& data, std::atomic<real_t>* reduced_numerators, std::atomic<real_t>* reduced_denominators,
+			  std::atomic<real_t>* reduced_factors, real_t* numerators, real_t* denominators, real_t* factors,
+			  std::atomic<index_t>* ballots, bool recompute, bool with_internalized,
+			  std::atomic<bool>* __restrict__ is_conflict)
 {
 	if (recompute)
 	{
@@ -254,20 +272,20 @@ void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recomp
 
 	if (m.mesh.dims == 1)
 	{
-		simulate<1>(m.agents->get_agent_data(), reduced_numerators_.data(), reduced_denominators_.data(),
-					reduced_factors_.data(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
+		simulate<1>(m.agents->get_agent_data(), reduced_numerators_.get(), reduced_denominators_.get(),
+					reduced_factors_.get(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
 					recompute, compute_internalized_substrates_, &is_conflict_);
 	}
 	else if (m.mesh.dims == 2)
 	{
-		simulate<2>(m.agents->get_agent_data(), reduced_numerators_.data(), reduced_denominators_.data(),
-					reduced_factors_.data(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
+		simulate<2>(m.agents->get_agent_data(), reduced_numerators_.get(), reduced_denominators_.get(),
+					reduced_factors_.get(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
 					recompute, compute_internalized_substrates_, &is_conflict_);
 	}
 	else if (m.mesh.dims == 3)
 	{
-		simulate<3>(m.agents->get_agent_data(), reduced_numerators_.data(), reduced_denominators_.data(),
-					reduced_factors_.data(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
+		simulate<3>(m.agents->get_agent_data(), reduced_numerators_.get(), reduced_denominators_.get(),
+					reduced_factors_.get(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
 					recompute, compute_internalized_substrates_, &is_conflict_);
 	}
 }
@@ -315,13 +333,20 @@ void cell_solver::release_internalized_substrates(microenvironment& m, index_t i
 
 void cell_solver::resize(const microenvironment& m)
 {
+	auto prev_capacity = numerators_.capacity();
+
 	numerators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
 	denominators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
 	factors_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
 
-	reduced_numerators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
-	reduced_denominators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
-	reduced_factors_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
+	auto new_capacity = numerators_.capacity();
+
+	if (new_capacity != prev_capacity)
+	{
+		reduced_numerators_ = std::make_unique<std::atomic<real_t>[]>(new_capacity);
+		reduced_denominators_ = std::make_unique<std::atomic<real_t>[]>(new_capacity);
+		reduced_factors_ = std::make_unique<std::atomic<real_t>[]>(new_capacity);
+	}
 }
 
 void cell_solver::initialize(const microenvironment& m)
@@ -330,5 +355,5 @@ void cell_solver::initialize(const microenvironment& m)
 
 	resize(m);
 
-	ballots_ = std::make_unique<index_t[]>(m.mesh.voxel_count());
+	ballots_ = std::make_unique<std::atomic<index_t>[]>(m.mesh.voxel_count());
 }

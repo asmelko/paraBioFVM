@@ -35,6 +35,11 @@ add_library(BioFVMCore OBJECT ${src_files})
 
 target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
 
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(BioFVMCore PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	# Target unit_BioFVM
 	file(GLOB_RECURSE test_files "test/*")
@@ -56,9 +61,9 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-set(all_targets BioFVM unit_BioFVM BioFVMCore)
+	set(all_targets BioFVM unit_BioFVM BioFVMCore)
 else()
-set(all_targets BioFVMCore)
+	set(all_targets BioFVMCore)
 endif()
 
 foreach(target ${all_targets})
