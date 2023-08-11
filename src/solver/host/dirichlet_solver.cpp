@@ -1,19 +1,11 @@
 #include "dirichlet_solver.h"
 
 #include <noarr/structures/extra/traverser.hpp>
-#include <noarr/structures/interop/traverser_iter.hpp>
 
 #include "../../traits.h"
+#include "omp_utils.h"
 
 using namespace biofvm;
-
-template <typename T, typename F>
-inline void omp_trav_for_each(const T& trav, const F& f)
-{
-#pragma omp for
-	for (auto trav_inner : trav)
-		trav_inner.for_each(f);
-}
 
 template <index_t dims>
 auto fix_dims(const index_t* voxel_index)
