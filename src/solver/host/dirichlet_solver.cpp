@@ -8,9 +8,9 @@
 using namespace biofvm;
 
 template <typename T, typename F>
-inline void omp_trav_for_each_nowait(const T& trav, const F& f)
+inline void omp_trav_for_each(const T& trav, const F& f)
 {
-#pragma omp for nowait
+#pragma omp for
 	for (auto trav_inner : trav)
 		trav_inner.for_each(f);
 }
@@ -57,7 +57,7 @@ void solve_boundary(real_t* __restrict__ substrate_densities, const real_t* __re
 	if (dirichlet_values == nullptr)
 		return;
 
-	omp_trav_for_each_nowait(noarr::traverser(dens_l), [&](auto state) {
+	omp_trav_for_each(noarr::traverser(dens_l), [&](auto state) {
 		auto s = noarr::get_index<'s'>(state);
 
 		if (dirichlet_conditions[s])

@@ -40,8 +40,8 @@ void clear_ballots(const real_t* __restrict__ cell_positions, std::atomic<index_
 				   std::atomic<real_t>* __restrict__ reduced_factors, index_t n, const cartesian_mesh& m,
 				   index_t substrate_densities)
 {
-	auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
-					^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
+	const auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
+						  ^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
 
 #pragma omp for
 	for (index_t i = 0; i < n; i++)
@@ -50,13 +50,13 @@ void clear_ballots(const real_t* __restrict__ cell_positions, std::atomic<index_
 
 		auto& b = b_l | noarr::get_at(ballots);
 
-		b.store(no_ballot);
+		b.store(no_ballot, std::memory_order_relaxed);
 
 		for (index_t s = 0; s < substrate_densities; s++)
 		{
-			reduced_numerators[i * substrate_densities + s].store(0);
-			reduced_denominators[i * substrate_densities + s].store(0);
-			reduced_factors[i * substrate_densities + s].store(0);
+			reduced_numerators[i * substrate_densities + s].store(0, std::memory_order_relaxed);
+			reduced_denominators[i * substrate_densities + s].store(0, std::memory_order_relaxed);
+			reduced_factors[i * substrate_densities + s].store(0, std::memory_order_relaxed);
 		}
 	}
 }
@@ -93,8 +93,8 @@ void ballot_and_sum(std::atomic<real_t>* __restrict__ reduced_numerators,
 					const real_t* __restrict__ cell_positions, std::atomic<index_t>* __restrict__ ballots, index_t n,
 					index_t substrates_count, const cartesian_mesh& m, std::atomic<bool>* __restrict__ is_conflict)
 {
-	auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
-					^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
+	const auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
+						  ^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
 
 #pragma omp for
 	for (index_t i = 0; i < n; i++)
@@ -104,26 +104,32 @@ void ballot_and_sum(std::atomic<real_t>* __restrict__ reduced_numerators,
 		auto& b = b_l | noarr::get_at(ballots);
 
 		auto expected = no_ballot;
-		bool success = b.compare_exchange_strong(expected, i);
+		bool success = b.compare_exchange_strong(expected, i, std::memory_order_acq_rel, std::memory_order_acquire);
 
 		if (success)
 		{
 			for (index_t s = 0; s < substrates_count; s++)
 			{
-				reduced_numerators[i * substrates_count + s].fetch_add(numerators[i * substrates_count + s]);
-				reduced_denominators[i * substrates_count + s].fetch_add(denominators[i * substrates_count + s] + 1);
-				reduced_factors[i * substrates_count + s].fetch_add(factors[i * substrates_count + s]);
+				reduced_numerators[i * substrates_count + s].fetch_add(numerators[i * substrates_count + s],
+																	   std::memory_order_relaxed);
+				reduced_denominators[i * substrates_count + s].fetch_add(denominators[i * substrates_count + s] + 1,
+																		 std::memory_order_relaxed);
+				reduced_factors[i * substrates_count + s].fetch_add(factors[i * substrates_count + s],
+																	std::memory_order_relaxed);
 			}
 		}
 		else
 		{
-			is_conflict[0].store(true);
+			is_conflict[0].store(true, std::memory_order_relaxed);
 
 			for (index_t s = 0; s < substrates_count; s++)
 			{
-				reduced_numerators[expected * substrates_count + s].fetch_add(numerators[i * substrates_count + s]);
-				reduced_denominators[expected * substrates_count + s].fetch_add(denominators[i * substrates_count + s]);
-				reduced_factors[expected * substrates_count + s].fetch_add(factors[i * substrates_count + s]);
+				reduced_numerators[expected * substrates_count + s].fetch_add(numerators[i * substrates_count + s],
+																			  std::memory_order_relaxed);
+				reduced_denominators[expected * substrates_count + s].fetch_add(denominators[i * substrates_count + s],
+																				std::memory_order_relaxed);
+				reduced_factors[expected * substrates_count + s].fetch_add(factors[i * substrates_count + s],
+																		   std::memory_order_relaxed);
 			}
 		}
 	}
@@ -158,8 +164,9 @@ void compute_densities(real_t* __restrict__ substrate_densities, const std::atom
 		for (index_t s = 0; s < substrates_count; s++)
 		{
 			(dens_l | noarr::get_at<'s'>(substrate_densities, s)) =
-				((dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s].load()) / denominator[s].load()
-				+ factor[s].load();
+				((dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s].load(std::memory_order_relaxed))
+					/ denominator[s].load(std::memory_order_relaxed)
+				+ factor[s].load(std::memory_order_relaxed);
 		}
 	}
 }
@@ -174,16 +181,17 @@ void compute_fused(real_t* __restrict__ substrate_densities, real_t* __restrict_
 
 	for (index_t s = 0; s < substrates_count; s++)
 	{
-		internalized_substrates[s] -=
-			voxel_volume
-			* (((1 - denominator[s].load()) * (dens_l | noarr::get_at<'s'>(substrate_densities, s))
-				+ numerator[s].load())
-				   / (denominator[s].load())
-			   + factor[s].load());
+		internalized_substrates[s] -= voxel_volume
+									  * (((1 - denominator[s].load(std::memory_order_relaxed))
+											  * (dens_l | noarr::get_at<'s'>(substrate_densities, s))
+										  + numerator[s].load(std::memory_order_relaxed))
+											 / (denominator[s].load(std::memory_order_relaxed))
+										 + factor[s].load(std::memory_order_relaxed));
 
 		(dens_l | noarr::get_at<'s'>(substrate_densities, s)) =
-			((dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s].load()) / denominator[s].load()
-			+ factor[s].load();
+			((dens_l | noarr::get_at<'s'>(substrate_densities, s)) + numerator[s].load(std::memory_order_relaxed))
+				/ denominator[s].load(std::memory_order_relaxed)
+			+ factor[s].load(std::memory_order_relaxed);
 	}
 }
 
@@ -259,15 +267,16 @@ void simulate(agent_data& data, std::atomic<real_t>* reduced_numerators, std::at
 	}
 
 	compute_result<dims>(data, reduced_numerators, reduced_denominators, reduced_factors, numerators, denominators,
-						 factors, ballots, with_internalized, *is_conflict);
+						 factors, ballots, with_internalized, is_conflict[0].load(std::memory_order_relaxed));
 }
 
 void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recompute)
 {
+#pragma master
 	if (recompute)
 	{
 		resize(m);
-		is_conflict_ = false;
+		is_conflict_.store(false, std::memory_order_relaxed);
 	}
 
 	if (m.mesh.dims == 1)

@@ -1115,3 +1115,89 @@ TEST_P(host_agents, conflict)
 		}
 	}
 }
+
+TEST_P(host_agents, conflict_big)
+{
+	bool compute_internalized = std::get<0>(GetParam());
+	bool recompute = std::get<1>(GetParam());
+	index_t conflict_in_each_voxel = 50;
+
+	cartesian_mesh mesh(1, { 0, 0, 0 }, { 2000, 20, 20 }, { 20, 20, 20 });
+
+	auto m = default_microenv(mesh);
+	m.diffusion_time_step = 0.01;
+	m.compute_internalized_substrates = compute_internalized;
+
+	index_t substrates_count = 2;
+
+	std::vector<agent*> agents;
+
+	for (int i = 0; i < mesh.grid_shape[0]; i++)
+	{
+		for (index_t j = 0; j < conflict_in_each_voxel; j++)
+		{
+			agents.push_back(m.agents->create_agent());
+			set_default_agent_values(agents.back(), 0, 500, mesh.voxel_center({ i, 0, 0 }), 1);
+		}
+	}
+
+	cell_solver s;
+
+	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
+
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	s.initialize(m);
+
+	auto& agent_data = dynamic_cast<agent_container*>(m.agents.get())->data();
+
+	std::vector<real_t> expected_internalized(agent_data.agents_count * m.substrates_count, 0);
+
+	compute_expected_agent_internalized_1d(m, expected_internalized);
+
+#pragma omp parallel
+	s.simulate_secretion_and_uptake(m, true);
+
+	if (compute_internalized)
+	{
+		for (std::size_t i = 0; i < agents.size(); i++)
+		{
+			EXPECT_FLOAT_EQ(agents[i]->internalized_substrates()[0], expected_internalized[2 * i]);
+			EXPECT_FLOAT_EQ(agents[i]->internalized_substrates()[1], expected_internalized[2 * i + 1]);
+		}
+	}
+
+	{
+		auto expected = compute_expected_agent_densities_1d(m);
+
+		for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		{
+			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 0)), expected[2 * x]);
+			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 1)), expected[2 * x + 1]);
+		}
+	}
+
+	compute_expected_agent_internalized_1d(m, expected_internalized);
+
+#pragma omp parallel
+	s.simulate_secretion_and_uptake(m, recompute);
+
+	if (compute_internalized)
+	{
+		for (std::size_t i = 0; i < agents.size(); i++)
+		{
+			EXPECT_FLOAT_EQ(agents[i]->internalized_substrates()[0], expected_internalized[2 * i]);
+			EXPECT_FLOAT_EQ(agents[i]->internalized_substrates()[1], expected_internalized[2 * i + 1]);
+		}
+	}
+
+	{
+		auto expected = compute_expected_agent_densities_1d(m);
+
+		for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
+		{
+			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 0)), expected[2 * x]);
+			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 1)), expected[2 * x + 1]);
+		}
+	}
+}
