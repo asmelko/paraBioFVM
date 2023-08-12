@@ -272,7 +272,7 @@ void simulate(agent_data& data, std::atomic<real_t>* reduced_numerators, std::at
 
 void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recompute)
 {
-#pragma omp master
+#pragma omp single
 	if (recompute)
 	{
 		resize(m);
