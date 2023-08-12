@@ -281,7 +281,7 @@ void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict
 
 	for (index_t i = 1; i < n; i++)
 	{
-#pragma omp for
+#pragma omp for nowait
 		for (index_t j = 0; j < p_n; j++)
 		{
 			noarr::traverser(dens_l)
@@ -294,6 +294,7 @@ void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict
 				});
 		}
 	}
+#pragma omp barrier
 
 #pragma omp for
 	for (index_t j = 0; j < p_n; j++)
@@ -308,7 +309,7 @@ void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict
 
 	for (index_t i = n - 2; i >= 0; i--)
 	{
-#pragma omp for
+#pragma omp for nowait
 		for (index_t j = 0; j < p_n; j++)
 		{
 			noarr::traverser(dens_l)
@@ -322,6 +323,7 @@ void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict
 				});
 		}
 	}
+#pragma omp barrier
 }
 
 void diffusion_solver::solve_1d(microenvironment& m)
