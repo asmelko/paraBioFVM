@@ -308,8 +308,9 @@ void release_internal(real_t* __restrict__ substrate_densities, real_t* __restri
 
 	for (index_t s = 0; s < substrates_count; s++)
 	{
-		(dens_l | noarr::get_at<'s'>(substrate_densities, s)) +=
-			internalized_substrates[s] * fraction_released_at_death[s] / voxel_volume;
+		std::atomic_ref<real_t>((dens_l | noarr::get_at<'s'>(substrate_densities, s)))
+			.fetch_add(internalized_substrates[s] * fraction_released_at_death[s] / voxel_volume,
+					   std::memory_order_relaxed);
 
 		internalized_substrates[s] = 0;
 	}
