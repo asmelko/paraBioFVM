@@ -652,6 +652,7 @@ TEST(host_dirichlet_solver, boundaries_D1)
 	add_boundary_dirichlet(m, substrates_count, 0, true, 4);
 	add_boundary_dirichlet(m, substrates_count, 0, false, 5);
 
+#pragma omp parallel
 	dirichlet_solver::solve(m);
 
 	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -683,6 +684,7 @@ TEST(host_dirichlet_solver, boundaries_D2)
 	add_boundary_dirichlet(m, substrates_count, 1, true, 6);
 	add_boundary_dirichlet(m, substrates_count, 1, false, 7);
 
+#pragma omp parallel
 	dirichlet_solver::solve(m);
 
 	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
@@ -736,6 +738,7 @@ TEST(host_dirichlet_solver, boundaries_D3)
 	add_boundary_dirichlet(m, substrates_count, 2, true, 8);
 	add_boundary_dirichlet(m, substrates_count, 2, false, 9);
 
+#pragma omp parallel
 	dirichlet_solver::solve(m);
 
 	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
