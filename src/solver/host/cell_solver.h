@@ -43,6 +43,7 @@ class cell_solver
 	std::vector<real_t> numerators_;
 	std::vector<real_t> denominators_;
 	std::vector<real_t> factors_;
+	std::vector<index_t> voxel_indices_;
 
 	std::unique_ptr<std::atomic<real_t>[]> reduced_numerators_;
 	std::unique_ptr<std::atomic<real_t>[]> reduced_denominators_;
