@@ -49,7 +49,7 @@ void solve_boundary(real_t* __restrict__ substrate_densities, const real_t* __re
 	if (dirichlet_values == nullptr)
 		return;
 
-	omp_trav_for_each(noarr::traverser(dens_l), [&](auto state) {
+	omp_trav_for_each(noarr::traverser(dens_l), [=](auto state) {
 		auto s = noarr::get_index<'s'>(state);
 
 		if (dirichlet_conditions[s])

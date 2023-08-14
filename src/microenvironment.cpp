@@ -17,7 +17,7 @@ void initialize_substrate_densities(real_t* substrate_densities, const real_t* i
 {
 	auto dens_l = layout_traits<dims>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
 
-	omp_p_trav_for_each(noarr::traverser(dens_l), [&](auto state) {
+	omp_p_trav_for_each(noarr::traverser(dens_l), [=](auto state) {
 		auto s = noarr::get_index<'s'>(state);
 
 		(dens_l | noarr::get_at(substrate_densities, state)) = initial_conditions[s];

@@ -236,21 +236,21 @@ void solve_slice_yz(real_t* __restrict__ densities, const real_t* __restrict__ b
 	auto dens_l = dens_l_orig ^ noarr::merge_blocks<'x', 's', 'X'>()
 				  ^ noarr::into_blocks_static<'X', 'b', 'x', 'X'>(substrates_count * copy_dim);
 
-	noarr::traverser(dens_l).order(noarr::shift<swipe_dim>(noarr::lit<1>)).for_each([&](auto state) {
+	noarr::traverser(dens_l).order(noarr::shift<swipe_dim>(noarr::lit<1>)).for_each([=](auto state) {
 		auto prev_state = noarr::neighbor<swipe_dim>(state, -1);
 		(dens_l | noarr::get_at(densities, state)) =
 			(dens_l | noarr::get_at(densities, state))
 			- (diag_l | noarr::get_at(e, prev_state)) * (dens_l | noarr::get_at(densities, prev_state));
 	});
 
-	noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(n - 1)).for_each([&](auto state) {
+	noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(n - 1)).for_each([=](auto state) {
 		(dens_l | noarr::get_at(densities, state)) =
 			(dens_l | noarr::get_at(densities, state)) * (diag_l | noarr::get_at(b, state));
 	});
 
 	for (index_t i = n - 2; i >= 0; i--)
 	{
-		noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(i)).for_each([&](auto state) {
+		noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(i)).for_each([=](auto state) {
 			auto next_state = noarr::neighbor<swipe_dim>(state, 1);
 			(dens_l | noarr::get_at(densities, state)) =
 				((dens_l | noarr::get_at(densities, state))
@@ -286,7 +286,7 @@ void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict
 		{
 			noarr::traverser(dens_l)
 				.order(noarr::fix<swipe_dim>(i) ^ noarr::fix<para_dim>(j))
-				.for_each([&](auto state) {
+				.for_each([=](auto state) {
 					auto prev_state = noarr::neighbor<swipe_dim>(state, -1);
 					(dens_l | noarr::get_at(densities, state)) =
 						(dens_l | noarr::get_at(densities, state))
@@ -301,7 +301,7 @@ void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict
 	{
 		noarr::traverser(dens_l)
 			.order(noarr::fix<swipe_dim>(n - 1) ^ noarr::fix<para_dim>(j))
-			.for_each([&](auto state) {
+			.for_each([=](auto state) {
 				(dens_l | noarr::get_at(densities, state)) =
 					(dens_l | noarr::get_at(densities, state)) * (diag_l | noarr::get_at(b, state));
 			});
@@ -314,7 +314,7 @@ void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict
 		{
 			noarr::traverser(dens_l)
 				.order(noarr::fix<swipe_dim>(i) ^ noarr::fix<para_dim>(j))
-				.for_each([&](auto state) {
+				.for_each([=](auto state) {
 					auto next_state = noarr::neighbor<swipe_dim>(state, 1);
 					(dens_l | noarr::get_at(densities, state)) =
 						((dens_l | noarr::get_at(densities, state))
