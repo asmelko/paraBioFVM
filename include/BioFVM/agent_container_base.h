@@ -58,13 +58,17 @@ public:
 
 	virtual agent* create_agent() override { return create(); }
 
-	agent_t* create()
+	template <typename other_agent_t = agent_t>
+	other_agent_t* create()
 	{
 		data_.add();
 
 		agents_.emplace_back(std::make_unique<agent_t>(next_agent_id_++, data_, data_.agents_count - 1));
 
-		return agents_.back().get();
+		if constexpr (std::is_same_v<other_agent_t, agent_t>)
+			return agents_.back().get();
+		else
+			return dynamic_cast<other_agent_t*>(agents_.back().get());
 	}
 
 	virtual void remove_agent(agent* agent) override
