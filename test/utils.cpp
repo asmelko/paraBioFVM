@@ -145,7 +145,7 @@ std::vector<real_t> compute_expected_agent_densities_1d(microenvironment& m)
 
 			for (index_t i = 0; i < agent_data.agents_count; i++)
 			{
-				if (agent_data.positions[i] == x)
+				if (agent_data.positions[i] / m.mesh.voxel_shape[0] == x)
 				{
 					num += agent_data.secretion_rates[i * m.substrates_count + s]
 						   * agent_data.saturation_densities[i * m.substrates_count + s] * m.diffusion_time_step

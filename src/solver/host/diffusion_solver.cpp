@@ -180,6 +180,48 @@ void solve_slice(real_t* __restrict__ densities, const real_t* __restrict__ b, c
 }
 
 template <char swipe_dim, typename density_layout_t>
+void solve_slice_omp(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
+					 const real_t* __restrict__ e, const density_layout_t dens_l)
+{
+	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
+	const index_t n = dens_l | noarr::get_length<swipe_dim>();
+
+	auto diag_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'s'>(substrates_count) ^ noarr::sized_vector<'i'>(n);
+
+#pragma omp for
+	for (index_t s = 0; s < substrates_count; s++)
+	{
+		for (index_t i = 1; i < n; i++)
+		{
+			(dens_l | noarr::get_at<swipe_dim, 's'>(densities, i, s)) =
+				(dens_l | noarr::get_at<swipe_dim, 's'>(densities, i, s))
+				- (diag_l | noarr::get_at<'i', 's'>(e, i - 1, s))
+					  * (dens_l | noarr::get_at<swipe_dim, 's'>(densities, i - 1, s));
+		}
+	}
+
+#pragma omp for
+	for (index_t s = 0; s < substrates_count; s++)
+	{
+		(dens_l | noarr::get_at<swipe_dim, 's'>(densities, n - 1, s)) =
+			(dens_l | noarr::get_at<swipe_dim, 's'>(densities, n - 1, s))
+			* (diag_l | noarr::get_at<'i', 's'>(b, n - 1, s));
+	}
+
+#pragma omp for
+	for (index_t s = 0; s < substrates_count; s++)
+	{
+		for (index_t i = n - 2; i >= 0; i--)
+		{
+			(dens_l | noarr::get_at<swipe_dim, 's'>(densities, i, s)) =
+				((dens_l | noarr::get_at<swipe_dim, 's'>(densities, i, s))
+				 - c[s] * (dens_l | noarr::get_at<swipe_dim, 's'>(densities, i + 1, s)))
+				* (diag_l | noarr::get_at<'i', 's'>(b, i, s));
+		}
+	}
+}
+
+template <char swipe_dim, typename density_layout_t>
 void solve_slice_yz(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
 					const real_t* __restrict__ e, const density_layout_t dens_l_orig, const index_t copy_dim)
 {
@@ -194,21 +236,21 @@ void solve_slice_yz(real_t* __restrict__ densities, const real_t* __restrict__ b
 	auto dens_l = dens_l_orig ^ noarr::merge_blocks<'x', 's', 'X'>()
 				  ^ noarr::into_blocks_static<'X', 'b', 'x', 'X'>(substrates_count * copy_dim);
 
-	noarr::traverser(dens_l).order(noarr::shift<swipe_dim>(noarr::lit<1>)).for_each([&](auto state) {
+	noarr::traverser(dens_l).order(noarr::shift<swipe_dim>(noarr::lit<1>)).for_each([=](auto state) {
 		auto prev_state = noarr::neighbor<swipe_dim>(state, -1);
 		(dens_l | noarr::get_at(densities, state)) =
 			(dens_l | noarr::get_at(densities, state))
 			- (diag_l | noarr::get_at(e, prev_state)) * (dens_l | noarr::get_at(densities, prev_state));
 	});
 
-	noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(n - 1)).for_each([&](auto state) {
+	noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(n - 1)).for_each([=](auto state) {
 		(dens_l | noarr::get_at(densities, state)) =
 			(dens_l | noarr::get_at(densities, state)) * (diag_l | noarr::get_at(b, state));
 	});
 
 	for (index_t i = n - 2; i >= 0; i--)
 	{
-		noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(i)).for_each([&](auto state) {
+		noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(i)).for_each([=](auto state) {
 			auto next_state = noarr::neighbor<swipe_dim>(state, 1);
 			(dens_l | noarr::get_at(densities, state)) =
 				((dens_l | noarr::get_at(densities, state))
@@ -218,13 +260,79 @@ void solve_slice_yz(real_t* __restrict__ densities, const real_t* __restrict__ b
 	}
 }
 
+template <char swipe_dim, typename density_layout_t>
+void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
+						const real_t* __restrict__ e, const density_layout_t dens_l_orig, const index_t copy_dim)
+{
+	constexpr char para_dim = swipe_dim == 'y' ? 'x' : 'y';
+
+	const index_t substrates_count = dens_l_orig | noarr::get_length<'s'>();
+	const index_t n = dens_l_orig | noarr::get_length<swipe_dim>();
+
+	auto diag_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'X'>(substrates_count * copy_dim)
+				  ^ noarr::sized_vector<swipe_dim>(n);
+
+	auto c_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'X'>(substrates_count * copy_dim);
+
+	auto dens_l = dens_l_orig ^ noarr::merge_blocks<'x', 's', 'X'>()
+				  ^ noarr::into_blocks_dynamic<'X', 'x', 'X', 'b'>(substrates_count * copy_dim);
+
+	const index_t p_n = dens_l | noarr::get_length<para_dim>();
+
+	for (index_t i = 1; i < n; i++)
+	{
+#pragma omp for nowait
+		for (index_t j = 0; j < p_n; j++)
+		{
+			noarr::traverser(dens_l)
+				.order(noarr::fix<swipe_dim>(i) ^ noarr::fix<para_dim>(j))
+				.for_each([=](auto state) {
+					auto prev_state = noarr::neighbor<swipe_dim>(state, -1);
+					(dens_l | noarr::get_at(densities, state)) =
+						(dens_l | noarr::get_at(densities, state))
+						- (diag_l | noarr::get_at(e, prev_state)) * (dens_l | noarr::get_at(densities, prev_state));
+				});
+		}
+	}
+#pragma omp barrier
+
+#pragma omp for
+	for (index_t j = 0; j < p_n; j++)
+	{
+		noarr::traverser(dens_l)
+			.order(noarr::fix<swipe_dim>(n - 1) ^ noarr::fix<para_dim>(j))
+			.for_each([=](auto state) {
+				(dens_l | noarr::get_at(densities, state)) =
+					(dens_l | noarr::get_at(densities, state)) * (diag_l | noarr::get_at(b, state));
+			});
+	}
+
+	for (index_t i = n - 2; i >= 0; i--)
+	{
+#pragma omp for nowait
+		for (index_t j = 0; j < p_n; j++)
+		{
+			noarr::traverser(dens_l)
+				.order(noarr::fix<swipe_dim>(i) ^ noarr::fix<para_dim>(j))
+				.for_each([=](auto state) {
+					auto next_state = noarr::neighbor<swipe_dim>(state, 1);
+					(dens_l | noarr::get_at(densities, state)) =
+						((dens_l | noarr::get_at(densities, state))
+						 - (c_l | noarr::get_at(c, state)) * (dens_l | noarr::get_at(densities, next_state)))
+						* (diag_l | noarr::get_at(b, state));
+				});
+		}
+	}
+#pragma omp barrier
+}
+
 void diffusion_solver::solve_1d(microenvironment& m)
 {
 	auto dens_l = layout_traits<1>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
 
 	dirichlet_solver::solve_1d(m);
 
-	solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(), dens_l);
+	solve_slice_omp<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(), dens_l);
 
 	dirichlet_solver::solve_1d(m);
 }
@@ -236,13 +344,14 @@ void diffusion_solver::solve_2d(microenvironment& m)
 	dirichlet_solver::solve_2d(m);
 
 	// swipe x
+#pragma omp for
 	for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
 		solve_slice<'x'>(m.substrate_densities.get(), bx_.get(), cx_.get(), ex_.get(), dens_l ^ noarr::fix<'y'>(y));
 
 	dirichlet_solver::solve_2d(m);
 
 	// swipe y
-	solve_slice_yz<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(), dens_l, substrate_factor_);
+	solve_slice_yz_omp<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(), dens_l, substrate_factor_);
 
 	dirichlet_solver::solve_2d(m);
 }
@@ -254,6 +363,7 @@ void diffusion_solver::solve_3d(microenvironment& m)
 	dirichlet_solver::solve_3d(m);
 
 	// swipe x
+#pragma omp for
 	for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
 	{
 		for (index_t y = 0; y < m.mesh.grid_shape[1]; y++)
@@ -266,6 +376,7 @@ void diffusion_solver::solve_3d(microenvironment& m)
 	dirichlet_solver::solve_3d(m);
 
 	// swipe y
+#pragma omp for
 	for (index_t z = 0; z < m.mesh.grid_shape[2]; z++)
 	{
 		solve_slice_yz<'y'>(m.substrate_densities.get(), by_.get(), cy_.get(), ey_.get(), dens_l ^ noarr::fix<'z'>(z),
@@ -274,7 +385,7 @@ void diffusion_solver::solve_3d(microenvironment& m)
 	dirichlet_solver::solve_3d(m);
 
 	// swipe z
-	solve_slice_yz<'z'>(m.substrate_densities.get(), bz_.get(), cz_.get(), ez_.get(), dens_l, substrate_factor_);
+	solve_slice_yz_omp<'z'>(m.substrate_densities.get(), bz_.get(), cz_.get(), ez_.get(), dens_l, substrate_factor_);
 
 	dirichlet_solver::solve_3d(m);
 }

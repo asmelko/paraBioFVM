@@ -3,6 +3,7 @@
 #include <noarr/structures/extra/traverser.hpp>
 
 #include "../../traits.h"
+#include "omp_utils.h"
 
 using namespace biofvm;
 
@@ -27,6 +28,7 @@ void solve_interior(real_t* __restrict__ substrate_densities, const index_t* __r
 
 	auto dens_l = layout_traits<dims>::construct_density_layout(substrates_count, grid_shape);
 
+#pragma omp for
 	for (index_t voxel_idx = 0; voxel_idx < dirichlet_voxels_count; ++voxel_idx)
 	{
 		auto subs_l = dens_l ^ fix_dims<dims>(dirichlet_voxels + dims * voxel_idx);
@@ -47,7 +49,7 @@ void solve_boundary(real_t* __restrict__ substrate_densities, const real_t* __re
 	if (dirichlet_values == nullptr)
 		return;
 
-	noarr::traverser(dens_l).for_each([&](auto state) {
+	omp_trav_for_each(noarr::traverser(dens_l), [=](auto state) {
 		auto s = noarr::get_index<'s'>(state);
 
 		if (dirichlet_conditions[s])
@@ -120,24 +122,24 @@ void dirichlet_solver::solve(microenvironment& m)
 
 void dirichlet_solver::solve_1d(microenvironment& m)
 {
+	solve_boundaries<1>(m);
 	solve_interior<1>(m.substrate_densities.get(), m.dirichlet_interior_voxels.get(), m.dirichlet_interior_values.get(),
 					  m.dirichlet_interior_conditions.get(), m.substrates_count, m.dirichlet_interior_voxels_count,
 					  m.mesh.grid_shape);
-	solve_boundaries<1>(m);
 }
 
 void dirichlet_solver::solve_2d(microenvironment& m)
 {
+	solve_boundaries<2>(m);
 	solve_interior<2>(m.substrate_densities.get(), m.dirichlet_interior_voxels.get(), m.dirichlet_interior_values.get(),
 					  m.dirichlet_interior_conditions.get(), m.substrates_count, m.dirichlet_interior_voxels_count,
 					  m.mesh.grid_shape);
-	solve_boundaries<2>(m);
 }
 
 void dirichlet_solver::solve_3d(microenvironment& m)
 {
+	solve_boundaries<3>(m);
 	solve_interior<3>(m.substrate_densities.get(), m.dirichlet_interior_voxels.get(), m.dirichlet_interior_values.get(),
 					  m.dirichlet_interior_conditions.get(), m.substrates_count, m.dirichlet_interior_voxels_count,
 					  m.mesh.grid_shape);
-	solve_boundaries<3>(m);
 }
