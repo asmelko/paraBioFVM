@@ -203,7 +203,7 @@ void compute_result(agent_data& data, const std::atomic<real_t>* reduced_numerat
 {
 	index_t voxel_volume = data.m.mesh.voxel_volume(); // expecting that voxel volume is the same for all voxels
 	auto dens_l = layout_traits<dims>::construct_density_layout(data.m.substrates_count, data.m.mesh.grid_shape);
-	auto ballot_l = noarr::scalar<index_t>() ^ typename layout_traits<dims>::grid_layout_t()
+	auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
 					^ layout_traits<dims>::set_grid_lengths(data.m.mesh.grid_shape);
 
 	if (with_internalized && !is_conflict)
@@ -238,7 +238,7 @@ void compute_result(agent_data& data, const std::atomic<real_t>* reduced_numerat
 	for (index_t i = 0; i < data.agents_count; i++)
 	{
 		auto fixed_dims = fix_dims<dims>(data.positions.data() + i * dims, data.m.mesh);
-		auto ballot = (ballot_l ^ fixed_dims) | noarr::get_at(ballots);
+		auto ballot = ((ballot_l ^ fixed_dims) | noarr::get_at(ballots)).load(std::memory_order_relaxed);
 		compute_densities(data.m.substrate_densities.get(), reduced_numerators + i * data.m.substrates_count,
 						  reduced_denominators + i * data.m.substrates_count,
 						  reduced_factors + i * data.m.substrates_count, ballot == i, dens_l ^ fixed_dims);
