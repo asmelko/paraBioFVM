@@ -36,6 +36,8 @@ their data span over x*s, not only over s (so they got copied substrate_factor_ 
 */
 
 namespace biofvm {
+namespace solvers {
+namespace host {
 
 class diffusion_solver
 {
@@ -45,14 +47,15 @@ class diffusion_solver
 
 	index_t substrate_factor_;
 
-	void precompute_values(std::unique_ptr<real_t[]>& b, std::unique_ptr<real_t[]>& c, std::unique_ptr<real_t[]>& e,
-						   index_t shape, index_t dims, index_t n, const microenvironment& m, index_t copies);
-
 	void solve_1d(microenvironment& m);
 	void solve_2d(microenvironment& m);
 	void solve_3d(microenvironment& m);
 
 public:
+	static void precompute_values(std::unique_ptr<real_t[]>& b, std::unique_ptr<real_t[]>& c,
+								  std::unique_ptr<real_t[]>& e, index_t shape, index_t dims, index_t n,
+								  const microenvironment& m, index_t copies);
+
 	void initialize(microenvironment& m, dirichlet_solver& dirichlet);
 	void initialize(microenvironment& m);
 	void initialize(microenvironment& m, index_t substrate_factor);
@@ -60,4 +63,6 @@ public:
 	void solve(microenvironment& m);
 };
 
+} // namespace host
+} // namespace solvers
 } // namespace biofvm

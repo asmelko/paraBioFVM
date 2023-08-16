@@ -14,6 +14,8 @@ where D is a voxel substrate density vector
 */
 
 namespace biofvm {
+namespace solvers {
+namespace host {
 
 class bulk_solver
 {
@@ -31,4 +33,6 @@ public:
 	void solve_3d(microenvironment& m);
 };
 
+} // namespace host
+} // namespace solvers
 } // namespace biofvm

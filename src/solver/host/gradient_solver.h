@@ -3,13 +3,15 @@
 #include "microenvironment.h"
 
 namespace biofvm {
+namespace solvers {
+namespace host {
 
 class gradient_solver
 {
 public:
-	static void initialize(microenvironment& m);
-
 	static void solve(microenvironment& m);
 };
 
+} // namespace host
+} // namespace solvers
 } // namespace biofvm

@@ -12,6 +12,7 @@
 #include "utils.h"
 
 using namespace biofvm;
+using namespace solvers::host;
 
 class host_diffusion_solver : public testing::TestWithParam<index_t>
 {};

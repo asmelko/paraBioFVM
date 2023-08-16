@@ -1,6 +1,7 @@
 #pragma once
 
 #include "microenvironment.h"
+#include "opencl_solver.h"
 
 /*
 This solver applies Dirichlet boundary conditions to the microenvironment.
@@ -14,18 +15,25 @@ m.dirichlet_values - array of dirichlet values for each substrate with a dirichl
 
 namespace biofvm {
 namespace solvers {
-namespace host {
+namespace device {
 
-class dirichlet_solver
+class dirichlet_solver : opencl_solver
 {
-public:
-	static void solve(microenvironment& m);
+	std::array<cl::Buffer, 3> dirichlet_min_boundary_values_;
+	std::array<cl::Buffer, 3> dirichlet_max_boundary_values_;
+	std::array<cl::Buffer, 3> dirichlet_min_boundary_conditions_;
+	std::array<cl::Buffer, 3> dirichlet_max_boundary_conditions_;
 
-	static void solve_1d(microenvironment& m);
-	static void solve_2d(microenvironment& m);
-	static void solve_3d(microenvironment& m);
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_boundary_2d_;
+
+public:
+	dirichlet_solver(device_context& ctx);
+
+	void initialize(microenvironment& m);
+
+	void solve_2d(microenvironment& m);
 };
 
-} // namespace host
+} // namespace device
 } // namespace solvers
 } // namespace biofvm

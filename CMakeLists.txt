@@ -35,10 +35,18 @@ add_library(BioFVMCore OBJECT ${src_files})
 
 target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(BioFVMCore PUBLIC OpenMP::OpenMP_CXX)
-endif()
+find_package(OpenMP REQUIRED)
+find_package(OpenCL REQUIRED)
+
+target_link_libraries(BioFVMCore PUBLIC OpenMP::OpenMP_CXX OpenCL::OpenCL)
+
+file(GLOB cl_files_src "src/solver/device/*.cl")
+list(TRANSFORM cl_files_src REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/src/solver/device" "${CMAKE_CURRENT_BINARY_DIR}" OUTPUT_VARIABLE cl_files_build) 
+
+add_custom_command(
+    OUTPUT ${cl_files_build}
+    COMMAND ${CMAKE_COMMAND} -E copy ${cl_files_src} ${CMAKE_CURRENT_BINARY_DIR}
+    MAIN_DEPENDENCY ${cl_files_src})
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	# Target unit_BioFVM

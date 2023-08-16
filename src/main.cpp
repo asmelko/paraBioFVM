@@ -3,6 +3,8 @@
 
 #include "solver.h"
 
+#include "solver/device/diffusion_solver.h"
+
 using namespace biofvm;
 
 void make_agents(microenvironment& m, index_t count, bool conflict)
@@ -60,6 +62,19 @@ int main()
 	m.compute_internalized_substrates = true;
 
 	make_agents(m, 2'000'000, true);
+
+	solvers::device::device_context ctx;
+
+	ctx.initialize(m);
+
+	ctx.copy_to_device(m);
+
+	solvers::device::diffusion_solver ds(ctx);
+
+	ds.initialize(m);
+	ds.solve_2d(m);
+
+	ctx.queue.finish();
 
 	solver s;
 
