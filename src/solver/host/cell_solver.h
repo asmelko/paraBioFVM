@@ -37,10 +37,17 @@ D = D + I*F/v
 
 namespace biofvm {
 namespace solvers {
+
+namespace device {
+class cell_solver;
+}
+
 namespace host {
 
 class cell_solver : common_solver
 {
+	friend device::cell_solver;
+
 	bool compute_internalized_substrates_;
 
 	std::vector<real_t> numerators_;
@@ -56,6 +63,8 @@ class cell_solver : common_solver
 	std::unique_ptr<std::atomic<index_t>[]> ballots_;
 
 	void resize(microenvironment& m);
+
+	static void release_internalized_substrates(agent_data& data, index_t index);
 
 public:
 	void initialize(microenvironment& m);

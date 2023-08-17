@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "solver.h"
+#include "solver/device/cell_solver.h"
 #include "solver/device/diffusion_solver.h"
 
 using namespace biofvm;
@@ -73,6 +74,11 @@ int main()
 	ds.initialize(m);
 	ds.solve_3d(m);
 
+	solvers::device::cell_solver cs(ctx);
+
+	cs.initialize(m);
+	cs.simulate_secretion_and_uptake(m, true);
+
 	ctx.queue.finish();
 
 	solver s;
@@ -84,15 +90,28 @@ int main()
 		std::size_t diffusion_duration, gradient_duration, secretion_duration;
 #pragma omp parallel private(diffusion_duration, gradient_duration, secretion_duration)
 		{
+			// {
+			// 	auto start = std::chrono::high_resolution_clock::now();
+
+			// 	s.diffusion.solve(m);
+
+			// 	auto end = std::chrono::high_resolution_clock::now();
+
+			// 	diffusion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			// }
+
+#pragma omp master
 			{
 				auto start = std::chrono::high_resolution_clock::now();
 
-				s.diffusion.solve(m);
+				ds.solve_3d(m);
+				ctx.queue.finish();
 
 				auto end = std::chrono::high_resolution_clock::now();
 
 				diffusion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 			}
+#pragma omp barrier
 
 			{
 				auto start = std::chrono::high_resolution_clock::now();
@@ -104,15 +123,28 @@ int main()
 				gradient_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 			}
 
+			// {
+			// 	auto start = std::chrono::high_resolution_clock::now();
+
+			// 	s.cell.simulate_secretion_and_uptake(m, i % 10 == 0);
+
+			// 	auto end = std::chrono::high_resolution_clock::now();
+
+			// 	secretion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			// }
+
+#pragma omp master
 			{
 				auto start = std::chrono::high_resolution_clock::now();
 
-				s.cell.simulate_secretion_and_uptake(m, i % 10 == 0);
+				cs.simulate_secretion_and_uptake(m, i % 10 == 0);
+				ctx.queue.finish();
 
 				auto end = std::chrono::high_resolution_clock::now();
 
 				secretion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 			}
+#pragma omp barrier
 
 #pragma omp master
 			std::cout << "Diffusion time: " << diffusion_duration << " ms,\t Gradient time: " << gradient_duration

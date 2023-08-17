@@ -3,6 +3,7 @@
 #include <atomic>
 
 #include "../../traits.h"
+#include "agent_data.h"
 #include "microenvironment.h"
 #include "types.h"
 
@@ -329,17 +330,22 @@ void release_dim(agent_data& data, index_t index)
 					 data.fraction_released_at_death.data() + index * data.m.substrates_count, voxel_volume, dens_l);
 }
 
+void cell_solver::release_internalized_substrates(agent_data& data, index_t index)
+{
+	if (data.m.mesh.dims == 1)
+		release_dim<1>(data, index);
+	else if (data.m.mesh.dims == 2)
+		release_dim<2>(data, index);
+	else if (data.m.mesh.dims == 3)
+		release_dim<3>(data, index);
+}
+
 void cell_solver::release_internalized_substrates(microenvironment& m, index_t index)
 {
 	if (!compute_internalized_substrates_)
 		return;
 
-	if (m.mesh.dims == 1)
-		release_dim<1>(get_agent_data(m), index);
-	else if (m.mesh.dims == 2)
-		release_dim<2>(get_agent_data(m), index);
-	else if (m.mesh.dims == 3)
-		release_dim<3>(get_agent_data(m), index);
+	release_internalized_substrates(get_agent_data(m), index);
 }
 
 void cell_solver::resize(microenvironment& m)

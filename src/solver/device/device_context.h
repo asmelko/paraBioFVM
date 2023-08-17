@@ -5,18 +5,36 @@
 
 #include <CL/opencl.hpp>
 
+#include "../common_solver.h"
 #include "microenvironment.h"
 
 namespace biofvm {
 namespace solvers {
 namespace device {
 
-struct device_context
+struct device_context : common_solver
 {
+private:
+	void resize(std::size_t new_capacity, microenvironment& m);
+
+public:
 	cl::Context context;
 	cl::CommandQueue queue;
 
 	cl::Buffer diffusion_substrates;
+
+	// required agent data:
+	std::size_t capacity;
+
+	cl::Buffer secretion_rates;
+	cl::Buffer saturation_densities;
+	cl::Buffer uptake_rates;
+	cl::Buffer net_export_rates;
+
+	cl::Buffer internalized_substrates;
+
+	cl::Buffer volumes;
+	cl::Buffer positions;
 
 	device_context();
 
