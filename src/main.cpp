@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include "solver.h"
-
 #include "solver/device/diffusion_solver.h"
 
 using namespace biofvm;
@@ -72,7 +71,7 @@ int main()
 	solvers::device::diffusion_solver ds(ctx);
 
 	ds.initialize(m);
-	ds.solve_2d(m);
+	ds.solve_3d(m);
 
 	ctx.queue.finish();
 

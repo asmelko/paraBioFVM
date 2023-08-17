@@ -17,6 +17,9 @@ class diffusion_solver : opencl_solver
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_slice_2d_x_,
 		solve_slice_2d_y_;
 
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t>
+		solve_slice_3d_x_, solve_slice_3d_y_, solve_slice_3d_z_;
+
 	void precompute_values(cl::Buffer& b, cl::Buffer& c, cl::Buffer& e, index_t shape, index_t dims, index_t n,
 						   const microenvironment& m);
 
@@ -26,6 +29,7 @@ public:
 
 	void initialize(microenvironment& m);
 	void solve_2d(microenvironment& m);
+	void solve_3d(microenvironment& m);
 };
 
 } // namespace device

@@ -24,7 +24,19 @@ class dirichlet_solver : opencl_solver
 	std::array<cl::Buffer, 3> dirichlet_min_boundary_conditions_;
 	std::array<cl::Buffer, 3> dirichlet_max_boundary_conditions_;
 
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_boundary_2d_;
+	index_t dirichlet_interior_voxels_count;
+	cl::Buffer dirichlet_interior_voxels;
+	cl::Buffer dirichlet_interior_values;
+	cl::Buffer dirichlet_interior_conditions;
+
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t> solve_boundary_2d_x_,
+		solve_boundary_2d_y_;
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_interior_2d_;
+
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t, index_t>
+		solve_boundary_3d_x_, solve_boundary_3d_y_, solve_boundary_3d_z_;
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t>
+		solve_interior_3d_;
 
 public:
 	dirichlet_solver(device_context& ctx);
@@ -32,6 +44,7 @@ public:
 	void initialize(microenvironment& m);
 
 	void solve_2d(microenvironment& m);
+	void solve_3d(microenvironment& m);
 };
 
 } // namespace device
