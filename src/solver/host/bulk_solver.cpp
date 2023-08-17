@@ -17,8 +17,8 @@ void bulk_solver::initialize(microenvironment& m)
 }
 
 template <typename density_layout_t>
-void solve_single(real_t* __restrict__ densities, const real_t* __restrict__ supply_rates,
-				  const real_t* __restrict__ uptake_rates, const real_t* __restrict__ supply_target_densities,
+void solve_single(real_t* __restrict densities, const real_t* __restrict supply_rates,
+				  const real_t* __restrict uptake_rates, const real_t* __restrict supply_target_densities,
 				  real_t time_step, const density_layout_t dens_l)
 {
 	const index_t s_dim = dens_l | noarr::get_length<'s'>();

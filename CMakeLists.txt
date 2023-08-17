@@ -27,13 +27,20 @@ FetchContent_Declare(
 )
 FetchContent_Populate(noarr_structures)
 
+FetchContent_Declare(
+	opencl-hpp
+	GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-CLHPP.git
+	GIT_TAG        main
+)
+FetchContent_Populate(opencl-hpp)
+
 # Target BioFVMCore
 file(GLOB_RECURSE src_files "src/*")
 list(FILTER src_files EXCLUDE REGEX ".*main\\..*")
 
 add_library(BioFVMCore OBJECT ${src_files})
 
-target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
+target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM ${opencl-hpp_SOURCE_DIR}/include)
 
 find_package(OpenMP REQUIRED)
 find_package(OpenCL REQUIRED)

@@ -142,8 +142,8 @@ void diffusion_solver::precompute_values(std::unique_ptr<real_t[]>& b, std::uniq
 }
 
 template <char swipe_dim, typename density_layout_t>
-void solve_slice(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
-				 const real_t* __restrict__ e, const density_layout_t dens_l)
+void solve_slice(real_t* __restrict densities, const real_t* __restrict b, const real_t* __restrict c,
+				 const real_t* __restrict e, const density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 	const index_t n = dens_l | noarr::get_length<swipe_dim>();
@@ -181,8 +181,8 @@ void solve_slice(real_t* __restrict__ densities, const real_t* __restrict__ b, c
 }
 
 template <char swipe_dim, typename density_layout_t>
-void solve_slice_omp(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
-					 const real_t* __restrict__ e, const density_layout_t dens_l)
+void solve_slice_omp(real_t* __restrict densities, const real_t* __restrict b, const real_t* __restrict c,
+					 const real_t* __restrict e, const density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 	const index_t n = dens_l | noarr::get_length<swipe_dim>();
@@ -223,8 +223,8 @@ void solve_slice_omp(real_t* __restrict__ densities, const real_t* __restrict__ 
 }
 
 template <char swipe_dim, typename density_layout_t>
-void solve_slice_yz(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
-					const real_t* __restrict__ e, const density_layout_t dens_l_orig, const index_t copy_dim)
+void solve_slice_yz(real_t* __restrict densities, const real_t* __restrict b, const real_t* __restrict c,
+					const real_t* __restrict e, const density_layout_t dens_l_orig, const index_t copy_dim)
 {
 	const index_t substrates_count = dens_l_orig | noarr::get_length<'s'>();
 	const index_t n = dens_l_orig | noarr::get_length<swipe_dim>();
@@ -262,8 +262,8 @@ void solve_slice_yz(real_t* __restrict__ densities, const real_t* __restrict__ b
 }
 
 template <char swipe_dim, typename density_layout_t>
-void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
-						const real_t* __restrict__ e, const density_layout_t dens_l_orig, const index_t copy_dim)
+void solve_slice_yz_omp(real_t* __restrict densities, const real_t* __restrict b, const real_t* __restrict c,
+						const real_t* __restrict e, const density_layout_t dens_l_orig, const index_t copy_dim)
 {
 	constexpr char para_dim = swipe_dim == 'y' ? 'x' : 'y';
 

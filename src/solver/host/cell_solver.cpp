@@ -36,10 +36,10 @@ auto fix_dims(const real_t* cell_position, const cartesian_mesh& m)
 }
 
 template <index_t dims>
-void clear_ballots(const real_t* __restrict__ cell_positions, std::atomic<index_t>* __restrict__ ballots,
-				   std::atomic<real_t>* __restrict__ reduced_numerators,
-				   std::atomic<real_t>* __restrict__ reduced_denominators,
-				   std::atomic<real_t>* __restrict__ reduced_factors, index_t n, const cartesian_mesh& m,
+void clear_ballots(const real_t* __restrict cell_positions, std::atomic<index_t>* __restrict ballots,
+				   std::atomic<real_t>* __restrict reduced_numerators,
+				   std::atomic<real_t>* __restrict reduced_denominators,
+				   std::atomic<real_t>* __restrict reduced_factors, index_t n, const cartesian_mesh& m,
 				   index_t substrate_densities)
 {
 	const auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
@@ -63,10 +63,10 @@ void clear_ballots(const real_t* __restrict__ cell_positions, std::atomic<index_
 	}
 }
 
-void compute_intermediates(real_t* __restrict__ numerators, real_t* __restrict__ denominators,
-						   real_t* __restrict__ factors, const real_t* __restrict__ secretion_rates,
-						   const real_t* __restrict__ uptake_rates, const real_t* __restrict__ saturation_densities,
-						   const real_t* __restrict__ net_export_rates, const real_t* __restrict__ cell_volumes,
+void compute_intermediates(real_t* __restrict numerators, real_t* __restrict denominators,
+						   real_t* __restrict factors, const real_t* __restrict secretion_rates,
+						   const real_t* __restrict uptake_rates, const real_t* __restrict saturation_densities,
+						   const real_t* __restrict net_export_rates, const real_t* __restrict cell_volumes,
 						   real_t voxel_volume, real_t time_step, index_t n, index_t substrates_count)
 {
 #pragma omp for
@@ -88,12 +88,12 @@ void compute_intermediates(real_t* __restrict__ numerators, real_t* __restrict__
 }
 
 template <index_t dims>
-void ballot_and_sum(std::atomic<real_t>* __restrict__ reduced_numerators,
-					std::atomic<real_t>* __restrict__ reduced_denominators,
-					std::atomic<real_t>* __restrict__ reduced_factors, const real_t* __restrict__ numerators,
-					const real_t* __restrict__ denominators, const real_t* __restrict__ factors,
-					const real_t* __restrict__ cell_positions, std::atomic<index_t>* __restrict__ ballots, index_t n,
-					index_t substrates_count, const cartesian_mesh& m, std::atomic<bool>* __restrict__ is_conflict)
+void ballot_and_sum(std::atomic<real_t>* __restrict reduced_numerators,
+					std::atomic<real_t>* __restrict reduced_denominators,
+					std::atomic<real_t>* __restrict reduced_factors, const real_t* __restrict numerators,
+					const real_t* __restrict denominators, const real_t* __restrict factors,
+					const real_t* __restrict cell_positions, std::atomic<index_t>* __restrict ballots, index_t n,
+					index_t substrates_count, const cartesian_mesh& m, std::atomic<bool>* __restrict is_conflict)
 {
 	const auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
 						  ^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
@@ -138,9 +138,9 @@ void ballot_and_sum(std::atomic<real_t>* __restrict__ reduced_numerators,
 }
 
 template <typename density_layout_t>
-void compute_internalized(real_t* __restrict__ internalized_substrates, const real_t* __restrict__ substrate_densities,
-						  const real_t* __restrict__ numerator, const real_t* __restrict__ denominator,
-						  const real_t* __restrict__ factor, real_t voxel_volume, density_layout_t dens_l)
+void compute_internalized(real_t* __restrict internalized_substrates, const real_t* __restrict substrate_densities,
+						  const real_t* __restrict numerator, const real_t* __restrict denominator,
+						  const real_t* __restrict factor, real_t voxel_volume, density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 
@@ -155,9 +155,9 @@ void compute_internalized(real_t* __restrict__ internalized_substrates, const re
 }
 
 template <typename density_layout_t>
-void compute_densities(real_t* __restrict__ substrate_densities, const std::atomic<real_t>* __restrict__ numerator,
-					   const std::atomic<real_t>* __restrict__ denominator,
-					   const std::atomic<real_t>* __restrict__ factor, bool has_ballot, density_layout_t dens_l)
+void compute_densities(real_t* __restrict substrate_densities, const std::atomic<real_t>* __restrict numerator,
+					   const std::atomic<real_t>* __restrict denominator,
+					   const std::atomic<real_t>* __restrict factor, bool has_ballot, density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 
@@ -174,9 +174,9 @@ void compute_densities(real_t* __restrict__ substrate_densities, const std::atom
 }
 
 template <typename density_layout_t>
-void compute_fused(real_t* __restrict__ substrate_densities, real_t* __restrict__ internalized_substrates,
-				   const std::atomic<real_t>* __restrict__ numerator,
-				   const std::atomic<real_t>* __restrict__ denominator, const std::atomic<real_t>* __restrict__ factor,
+void compute_fused(real_t* __restrict substrate_densities, real_t* __restrict internalized_substrates,
+				   const std::atomic<real_t>* __restrict numerator,
+				   const std::atomic<real_t>* __restrict denominator, const std::atomic<real_t>* __restrict factor,
 				   index_t voxel_volume, density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
@@ -251,7 +251,7 @@ template <index_t dims>
 void simulate(agent_data& data, std::atomic<real_t>* reduced_numerators, std::atomic<real_t>* reduced_denominators,
 			  std::atomic<real_t>* reduced_factors, real_t* numerators, real_t* denominators, real_t* factors,
 			  std::atomic<index_t>* ballots, bool recompute, bool with_internalized,
-			  std::atomic<bool>* __restrict__ is_conflict)
+			  std::atomic<bool>* __restrict is_conflict)
 {
 	if (recompute)
 	{
@@ -302,8 +302,8 @@ void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recomp
 }
 
 template <typename density_layout_t>
-void release_internal(real_t* __restrict__ substrate_densities, real_t* __restrict__ internalized_substrates,
-					  const real_t* __restrict__ fraction_released_at_death, real_t voxel_volume,
+void release_internal(real_t* __restrict substrate_densities, real_t* __restrict internalized_substrates,
+					  const real_t* __restrict fraction_released_at_death, real_t voxel_volume,
 					  density_layout_t dens_l)
 {
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();

@@ -8,7 +8,7 @@ using namespace biofvm;
 using namespace solvers::host;
 
 template <typename density_layout_t, typename gradient_layout_t>
-void solve_x(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
+void solve_x(real_t* __restrict gradients, real_t* __restrict densities, index_t dim_shape,
 			 const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
 	const index_t n = dens_l | noarr::get_length<'x'>();
@@ -44,7 +44,7 @@ void solve_x(real_t* __restrict__ gradients, real_t* __restrict__ densities, ind
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
-void solve_x_omp(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
+void solve_x_omp(real_t* __restrict gradients, real_t* __restrict densities, index_t dim_shape,
 				 const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
 	const index_t n = dens_l | noarr::get_length<'x'>();
@@ -83,7 +83,7 @@ void solve_x_omp(real_t* __restrict__ gradients, real_t* __restrict__ densities,
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
-void solve_y(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
+void solve_y(real_t* __restrict gradients, real_t* __restrict densities, index_t dim_shape,
 			 const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
 	const index_t y_dim = dens_l | noarr::get_length<'y'>();
@@ -124,7 +124,7 @@ void solve_y(real_t* __restrict__ gradients, real_t* __restrict__ densities, ind
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
-void solve_y_omp(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
+void solve_y_omp(real_t* __restrict gradients, real_t* __restrict densities, index_t dim_shape,
 				 const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
 	const index_t y_dim = dens_l | noarr::get_length<'y'>();
@@ -168,7 +168,7 @@ void solve_y_omp(real_t* __restrict__ gradients, real_t* __restrict__ densities,
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
-void solve_z_omp(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
+void solve_z_omp(real_t* __restrict gradients, real_t* __restrict densities, index_t dim_shape,
 				 const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
 	const index_t z_dim = dens_l | noarr::get_length<'z'>();
@@ -223,7 +223,7 @@ void solve_z_omp(real_t* __restrict__ gradients, real_t* __restrict__ densities,
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
-void solve_3d_internal(real_t* __restrict__ gradients, real_t* __restrict__ densities, point_t<index_t, 3> voxel_shape,
+void solve_3d_internal(real_t* __restrict gradients, real_t* __restrict densities, point_t<index_t, 3> voxel_shape,
 					   const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
 	const index_t z_dim = dens_l | noarr::get_length<'z'>();
@@ -250,7 +250,7 @@ void solve_3d_internal(real_t* __restrict__ gradients, real_t* __restrict__ dens
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
-void solve_2d_internal(real_t* __restrict__ gradients, real_t* __restrict__ densities, point_t<index_t, 3> voxel_shape,
+void solve_2d_internal(real_t* __restrict gradients, real_t* __restrict densities, point_t<index_t, 3> voxel_shape,
 					   const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
 	const index_t y_dim = dens_l | noarr::get_length<'y'>();
@@ -266,7 +266,7 @@ void solve_2d_internal(real_t* __restrict__ gradients, real_t* __restrict__ dens
 }
 
 template <typename density_layout_t, typename gradient_layout_t>
-void solve_1d_internal(real_t* __restrict__ gradients, real_t* __restrict__ densities, point_t<index_t, 3> voxel_shape,
+void solve_1d_internal(real_t* __restrict gradients, real_t* __restrict densities, point_t<index_t, 3> voxel_shape,
 					   const density_layout_t dens_l, const gradient_layout_t grad_l)
 {
 	solve_x_omp(gradients, densities, voxel_shape[0], dens_l, grad_l ^ noarr::fix<'d'>(noarr::lit<0>));

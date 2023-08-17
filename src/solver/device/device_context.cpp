@@ -2,8 +2,6 @@
 
 #include <iostream>
 
-#include <CL/cl.h>
-
 using namespace biofvm::solvers::device;
 
 device_context::device_context() : context(CL_DEVICE_TYPE_DEFAULT), queue(context), capacity(0)
@@ -31,7 +29,10 @@ device_context::device_context() : context(CL_DEVICE_TYPE_DEFAULT), queue(contex
 		std::cout << "Error: There are no OpenCL devices available!" << std::endl;
 	}
 	for (int i = 0; i < n; i++)
-		std::cout << "ID: " << i << ", Device: " << devices[i].getInfo<CL_DEVICE_NAME>() << std::endl;
+		std::cout << "ID: " << i << ", Device: " << devices[i].getInfo<CL_DEVICE_NAME>()
+				  << devices[i].getInfo<CL_DEVICE_EXTENSIONS>() << std::endl;
+	// context = cl::Context(devices[1]);
+	// queue = cl::CommandQueue(context);
 }
 
 void device_context::initialize(microenvironment& m)

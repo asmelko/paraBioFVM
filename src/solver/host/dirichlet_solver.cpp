@@ -20,8 +20,8 @@ auto fix_dims(const index_t* voxel_index)
 }
 
 template <index_t dims>
-void solve_interior(real_t* __restrict__ substrate_densities, const index_t* __restrict__ dirichlet_voxels,
-					const real_t* __restrict__ dirichlet_values, const bool* __restrict__ dirichlet_conditions,
+void solve_interior(real_t* __restrict substrate_densities, const index_t* __restrict dirichlet_voxels,
+					const real_t* __restrict dirichlet_values, const bool* __restrict dirichlet_conditions,
 					index_t substrates_count, index_t dirichlet_voxels_count, const point_t<index_t, 3>& grid_shape)
 {
 	if (dirichlet_voxels_count == 0)
@@ -44,8 +44,8 @@ void solve_interior(real_t* __restrict__ substrate_densities, const index_t* __r
 }
 
 template <typename density_layout_t>
-void solve_boundary(real_t* __restrict__ substrate_densities, const real_t* __restrict__ dirichlet_values,
-					const bool* __restrict__ dirichlet_conditions, const density_layout_t dens_l)
+void solve_boundary(real_t* __restrict substrate_densities, const real_t* __restrict dirichlet_values,
+					const bool* __restrict dirichlet_conditions, const density_layout_t dens_l)
 {
 	if (dirichlet_values == nullptr)
 		return;
