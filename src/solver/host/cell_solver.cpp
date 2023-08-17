@@ -95,46 +95,7 @@ void ballot_and_sum(std::atomic<real_t>* __restrict reduced_numerators,
 					const real_t* __restrict cell_positions, std::atomic<index_t>* __restrict ballots, index_t n,
 					index_t substrates_count, const cartesian_mesh& m, std::atomic<bool>* __restrict is_conflict)
 {
-	const auto ballot_l = noarr::scalar<std::atomic<index_t>>() ^ typename layout_traits<dims>::grid_layout_t()
-						  ^ layout_traits<dims>::set_grid_lengths(m.grid_shape);
-
-#pragma omp for
-	for (index_t i = 0; i < n; i++)
-	{
-		auto b_l = ballot_l ^ fix_dims<dims>(cell_positions + dims * i, m);
-
-		auto& b = b_l | noarr::get_at(ballots);
-
-		auto expected = no_ballot;
-		bool success = b.compare_exchange_strong(expected, i, std::memory_order_acq_rel, std::memory_order_acquire);
-
-		if (success)
-		{
-			for (index_t s = 0; s < substrates_count; s++)
-			{
-				reduced_numerators[i * substrates_count + s].fetch_add(numerators[i * substrates_count + s],
-																	   std::memory_order_relaxed);
-				reduced_denominators[i * substrates_count + s].fetch_add(denominators[i * substrates_count + s] + 1,
-																		 std::memory_order_relaxed);
-				reduced_factors[i * substrates_count + s].fetch_add(factors[i * substrates_count + s],
-																	std::memory_order_relaxed);
-			}
-		}
-		else
-		{
-			is_conflict[0].store(true, std::memory_order_relaxed);
-
-			for (index_t s = 0; s < substrates_count; s++)
-			{
-				reduced_numerators[expected * substrates_count + s].fetch_add(numerators[i * substrates_count + s],
-																			  std::memory_order_relaxed);
-				reduced_denominators[expected * substrates_count + s].fetch_add(denominators[i * substrates_count + s],
-																				std::memory_order_relaxed);
-				reduced_factors[expected * substrates_count + s].fetch_add(factors[i * substrates_count + s],
-																		   std::memory_order_relaxed);
-			}
-		}
-	}
+	
 }
 
 template <typename density_layout_t>
@@ -306,16 +267,7 @@ void release_internal(real_t* __restrict substrate_densities, real_t* __restrict
 					  const real_t* __restrict fraction_released_at_death, real_t voxel_volume,
 					  density_layout_t dens_l)
 {
-	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
-
-	for (index_t s = 0; s < substrates_count; s++)
-	{
-		std::atomic_ref<real_t>((dens_l | noarr::get_at<'s'>(substrate_densities, s)))
-			.fetch_add(internalized_substrates[s] * fraction_released_at_death[s] / voxel_volume,
-					   std::memory_order_relaxed);
-
-		internalized_substrates[s] = 0;
-	}
+	
 }
 
 template <index_t dims>
