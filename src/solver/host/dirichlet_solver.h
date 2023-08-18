@@ -13,12 +13,12 @@ m.dirichlet_values - array of dirichlet values for each substrate with a dirichl
 */
 
 namespace biofvm {
+namespace solvers {
+namespace host {
 
 class dirichlet_solver
 {
 public:
-	static void initialize(microenvironment& m);
-
 	static void solve(microenvironment& m);
 
 	static void solve_1d(microenvironment& m);
@@ -26,4 +26,6 @@ public:
 	static void solve_3d(microenvironment& m);
 };
 
+} // namespace host
+} // namespace solvers
 } // namespace biofvm

@@ -3,10 +3,12 @@
 #include <atomic>
 
 #include "../../traits.h"
+#include "agent_data.h"
 #include "microenvironment.h"
 #include "types.h"
 
 using namespace biofvm;
+using namespace solvers::host;
 
 static constexpr index_t no_ballot = -1;
 
@@ -281,21 +283,21 @@ void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recomp
 
 	if (m.mesh.dims == 1)
 	{
-		simulate<1>(m.agents->get_agent_data(), reduced_numerators_.get(), reduced_denominators_.get(),
-					reduced_factors_.get(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
-					recompute, compute_internalized_substrates_, &is_conflict_);
+		simulate<1>(get_agent_data(m), reduced_numerators_.get(), reduced_denominators_.get(), reduced_factors_.get(),
+					numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(), recompute,
+					compute_internalized_substrates_, &is_conflict_);
 	}
 	else if (m.mesh.dims == 2)
 	{
-		simulate<2>(m.agents->get_agent_data(), reduced_numerators_.get(), reduced_denominators_.get(),
-					reduced_factors_.get(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
-					recompute, compute_internalized_substrates_, &is_conflict_);
+		simulate<2>(get_agent_data(m), reduced_numerators_.get(), reduced_denominators_.get(), reduced_factors_.get(),
+					numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(), recompute,
+					compute_internalized_substrates_, &is_conflict_);
 	}
 	else if (m.mesh.dims == 3)
 	{
-		simulate<3>(m.agents->get_agent_data(), reduced_numerators_.get(), reduced_denominators_.get(),
-					reduced_factors_.get(), numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(),
-					recompute, compute_internalized_substrates_, &is_conflict_);
+		simulate<3>(get_agent_data(m), reduced_numerators_.get(), reduced_denominators_.get(), reduced_factors_.get(),
+					numerators_.data(), denominators_.data(), factors_.data(), ballots_.get(), recompute,
+					compute_internalized_substrates_, &is_conflict_);
 	}
 }
 
@@ -328,26 +330,31 @@ void release_dim(agent_data& data, index_t index)
 					 data.fraction_released_at_death.data() + index * data.m.substrates_count, voxel_volume, dens_l);
 }
 
+void cell_solver::release_internalized_substrates(agent_data& data, index_t index)
+{
+	if (data.m.mesh.dims == 1)
+		release_dim<1>(data, index);
+	else if (data.m.mesh.dims == 2)
+		release_dim<2>(data, index);
+	else if (data.m.mesh.dims == 3)
+		release_dim<3>(data, index);
+}
+
 void cell_solver::release_internalized_substrates(microenvironment& m, index_t index)
 {
 	if (!compute_internalized_substrates_)
 		return;
 
-	if (m.mesh.dims == 1)
-		release_dim<1>(m.agents->get_agent_data(), index);
-	else if (m.mesh.dims == 2)
-		release_dim<2>(m.agents->get_agent_data(), index);
-	else if (m.mesh.dims == 3)
-		release_dim<3>(m.agents->get_agent_data(), index);
+	release_internalized_substrates(get_agent_data(m), index);
 }
 
-void cell_solver::resize(const microenvironment& m)
+void cell_solver::resize(microenvironment& m)
 {
 	auto prev_capacity = numerators_.capacity();
 
-	numerators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
-	denominators_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
-	factors_.resize(m.substrates_count * m.agents->get_agent_data().agents_count);
+	numerators_.resize(m.substrates_count * get_agent_data(m).agents_count);
+	denominators_.resize(m.substrates_count * get_agent_data(m).agents_count);
+	factors_.resize(m.substrates_count * get_agent_data(m).agents_count);
 
 	auto new_capacity = numerators_.capacity();
 
@@ -359,7 +366,7 @@ void cell_solver::resize(const microenvironment& m)
 	}
 }
 
-void cell_solver::initialize(const microenvironment& m)
+void cell_solver::initialize(microenvironment& m)
 {
 	compute_internalized_substrates_ = m.compute_internalized_substrates;
 

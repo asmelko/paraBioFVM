@@ -5,6 +5,7 @@
 #include "../../traits.h"
 
 using namespace biofvm;
+using namespace solvers::host;
 
 template <typename density_layout_t, typename gradient_layout_t>
 void solve_x(real_t* __restrict__ gradients, real_t* __restrict__ densities, index_t dim_shape,
@@ -288,5 +289,3 @@ void gradient_solver::solve(microenvironment& m)
 
 #pragma omp barrier
 }
-
-void gradient_solver::initialize(microenvironment&) {}

@@ -7,7 +7,9 @@
 
 namespace biofvm {
 
-class cell_solver;
+namespace solvers {
+class common_solver;
+}
 
 using agent_ptr = std::unique_ptr<agent>;
 
@@ -17,7 +19,7 @@ using agent_container_ptr = std::unique_ptr<agent_container_base>;
 
 class agent_container_base
 {
-	friend cell_solver;
+	friend solvers::common_solver;
 
 protected:
 	virtual agent_data& get_agent_data() = 0;

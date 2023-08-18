@@ -3,6 +3,7 @@
 #include "../../traits.h"
 
 using namespace biofvm;
+using namespace solvers::host;
 
 void bulk_solver::initialize(microenvironment& m)
 {

@@ -7,6 +7,7 @@
 
 #include "agent_container_base.h"
 #include "mesh.h"
+#include "solver_data_residency.h"
 #include "types.h"
 
 namespace biofvm {
@@ -51,6 +52,8 @@ struct microenvironment
 	bulk_func_t supply_rate_func, uptake_rate_func, supply_target_densities_func;
 
 	bool compute_internalized_substrates;
+
+	solvers::data_residency data_residency;
 
 	index_t find_substrate_index(const std::string& name) const;
 

@@ -3,6 +3,7 @@
 #include <atomic>
 #include <memory>
 
+#include "../common_solver.h"
 #include "agent_data.h"
 
 /*
@@ -35,9 +36,18 @@ D = D + I*F/v
 */
 
 namespace biofvm {
+namespace solvers {
 
-class cell_solver
+namespace device {
+class cell_solver;
+}
+
+namespace host {
+
+class cell_solver : common_solver
 {
+	friend device::cell_solver;
+
 	bool compute_internalized_substrates_;
 
 	std::vector<real_t> numerators_;
@@ -52,14 +62,18 @@ class cell_solver
 
 	std::unique_ptr<std::atomic<index_t>[]> ballots_;
 
-	void resize(const microenvironment& m);
+	void resize(microenvironment& m);
+
+	static void release_internalized_substrates(agent_data& data, index_t index);
 
 public:
-	void initialize(const microenvironment& m);
+	void initialize(microenvironment& m);
 
 	void simulate_secretion_and_uptake(microenvironment& m, bool recompute);
 
 	void release_internalized_substrates(microenvironment& m, index_t index);
 };
 
+} // namespace host
+} // namespace solvers
 } // namespace biofvm

@@ -1,27 +1,21 @@
 #pragma once
 
-#define impl host
-
-#if impl == host
-#	include "../../src/solver/host/bulk_solver.h"
-#	include "../../src/solver/host/cell_solver.h"
-#	include "../../src/solver/host/diffusion_solver.h"
-#	include "../../src/solver/host/dirichlet_solver.h"
-#	include "../../src/solver/host/gradient_solver.h"
+#ifndef BioFVM_SOLVER_IMPL
+	#define BioFVM_SOLVER_IMPL host
 #endif
 
+
+#if 0
+	#include "../../src/solver/host/solver.h"
+
 namespace biofvm {
-
-class solver
-{
-public:
-	bulk_solver bulk;
-	cell_solver cell;
-	diffusion_solver diffusion;
-	dirichlet_solver dirichlet;
-	gradient_solver gradient;
-
-	void initialize(microenvironment& m);
-};
-
+using solver = solvers::host::solver;
 } // namespace biofvm
+
+#elif BioFVM_SOLVER_IMPL == device
+	#include "../../src/solver/device/solver.h"
+
+namespace biofvm {
+using solver = solvers::device::solver;
+} // namespace biofvm
+#endif

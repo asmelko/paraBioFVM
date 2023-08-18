@@ -3,7 +3,7 @@
 #include <noarr/structures/extra/traverser.hpp>
 #include <noarr/structures/interop/bag.hpp>
 
-#include "../src/solver/host/solver.h"
+#include "../src/solver/device/solver.h"
 #include "agent_container.h"
 #include "microenvironment.h"
 #include "traits.h"
@@ -11,7 +11,7 @@
 
 namespace biofvm {
 namespace solvers {
-namespace host {
+namespace device {
 
 struct device_solver_provider
 {
@@ -22,46 +22,16 @@ struct device_solver_provider
 	}
 };
 
-void run_func(solver&, microenvironment&, const std::function<void()>&& f)
+void run_func(solver& s, microenvironment& m, const std::function<void()>&& f)
 {
-#pragma omp parallel
+	s.store_data_to_solver(m);
 	f();
+	s.load_data_from_solver(m);
 }
 
 #define runit(S, M, F) run_func(S, M, [&]() { F; })
 
-class host_diffusion_solver : public testing::TestWithParam<index_t>
-{};
-
-INSTANTIATE_TEST_SUITE_P(vectorize, host_diffusion_solver, testing::Values(4, 1));
-
-TEST_P(host_diffusion_solver, D1_uniform)
-{
-	cartesian_mesh mesh(1, { 0, 0, 0 }, { 80, 0, 0 }, { 20, 0, 0 });
-
-	index_t substrates_count = 2;
-	auto m = default_microenv(mesh);
-
-	solver& s = device_solver_provider::get_solver();
-
-	s.initialize(m);
-	s.diffusion.initialize(m, GetParam());
-
-	runit(s, m, s.diffusion.solve(m));
-
-	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
-
-	noarr::traverser(dens_l).for_dims<'x'>([&](auto t) {
-		auto s = t.state();
-
-		auto l = dens_l ^ noarr::fix(s);
-
-		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.03846154);
-		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 1), 0.0625);
-	});
-}
-
-TEST_P(host_diffusion_solver, D2_uniform)
+TEST(device_diffusion_solver, D2_uniform)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 800, 800, 0 }, { 20, 20, 0 });
 
@@ -71,7 +41,6 @@ TEST_P(host_diffusion_solver, D2_uniform)
 	solver& s = device_solver_provider::get_solver();
 
 	s.initialize(m);
-	s.diffusion.initialize(m, GetParam());
 
 	runit(s, m, s.diffusion.solve(m));
 
@@ -87,7 +56,7 @@ TEST_P(host_diffusion_solver, D2_uniform)
 	});
 }
 
-TEST_P(host_diffusion_solver, D3_uniform)
+TEST(device_diffusion_solver, D3_uniform)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 200, 200, 200 }, { 20, 20, 20 });
 
@@ -97,7 +66,6 @@ TEST_P(host_diffusion_solver, D3_uniform)
 	solver& s = device_solver_provider::get_solver();
 
 	s.initialize(m);
-	s.diffusion.initialize(m, GetParam());
 
 	runit(s, m, s.diffusion.solve(m));
 
@@ -113,44 +81,7 @@ TEST_P(host_diffusion_solver, D3_uniform)
 	});
 }
 
-TEST_P(host_diffusion_solver, D1_random)
-{
-	cartesian_mesh mesh(1, { 0, 0, 0 }, { 60, 0, 0 }, { 20, 20, 20 });
-
-	index_t substrates_count = 2;
-	auto m = biorobots_microenv(mesh);
-
-	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
-
-	// fill with random values
-	for (index_t s = 0; s < m.substrates_count; ++s)
-		for (index_t x = 0; x < mesh.grid_shape[0]; ++x)
-		{
-			index_t index = s + x * m.substrates_count;
-			(dens_l | noarr::get_at<'x', 's'>(m.substrate_densities.get(), x, s)) = index;
-		}
-
-	solver& s = device_solver_provider::get_solver();
-
-	s.initialize(m);
-	s.diffusion.initialize(m, GetParam());
-
-	runit(s, m, s.diffusion.solve(m));
-
-	std::vector<float> expected = {
-		0.0486842592, 1.0444132121, 1.9980019980, 2.9880478088, 3.9473197368, 4.9316824055
-	};
-
-	for (index_t s = 0; s < m.substrates_count; ++s)
-		for (index_t x = 0; x < mesh.grid_shape[0]; ++x)
-		{
-			index_t index = s + x * m.substrates_count;
-
-			EXPECT_FLOAT_EQ((dens_l | noarr::get_at<'x', 's'>(m.substrate_densities.get(), x, s)), expected[index]);
-		}
-}
-
-TEST_P(host_diffusion_solver, D2_random)
+TEST(device_diffusion_solver, D2_random)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 60, 60, 0 }, { 20, 20, 20 });
 
@@ -171,7 +102,6 @@ TEST_P(host_diffusion_solver, D2_random)
 	solver& s = device_solver_provider::get_solver();
 
 	s.initialize(m);
-	s.diffusion.initialize(m, GetParam());
 
 	runit(s, m, s.diffusion.solve(m));
 
@@ -191,7 +121,7 @@ TEST_P(host_diffusion_solver, D2_random)
 			}
 }
 
-TEST_P(host_diffusion_solver, D3_random)
+TEST(device_diffusion_solver, D3_random)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 60, 60, 60 }, { 20, 20, 20 });
 
@@ -214,7 +144,6 @@ TEST_P(host_diffusion_solver, D3_random)
 	solver& s = device_solver_provider::get_solver();
 
 	s.initialize(m);
-	s.diffusion.initialize(m, GetParam());
 
 	runit(s, m, s.diffusion.solve(m));
 
@@ -243,36 +172,7 @@ TEST_P(host_diffusion_solver, D3_random)
 				}
 }
 
-TEST(host_dirichlet_solver, one_cond_D1)
-{
-	cartesian_mesh mesh(1, { 0, 0, 0 }, { 100, 0, 0 }, { 20, 0, 0 });
-
-	index_t substrates_count = 2;
-	auto m = default_microenv(mesh);
-
-	add_dirichlet_at(m, substrates_count, { { 2, 0, 0 } }, { 1 });
-
-	solver& s = device_solver_provider::get_solver();
-
-	s.initialize(m);
-
-	runit(s, m, s.diffusion.solve(m));
-
-	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
-
-	noarr::traverser(dens_l).for_dims<'x'>([&](auto t) {
-		auto s = t.state();
-
-		auto l = dens_l ^ noarr::fix(s);
-		if (noarr::get_index<'x'>(s) == 2)
-			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 1);
-		else
-			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.03846154);
-		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 1), 0.0625);
-	});
-}
-
-TEST(host_dirichlet_solver, one_cond_D2)
+TEST(device_dirichlet_solver, one_cond_D2)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 60, 60, 0 }, { 20, 20, 0 });
 
@@ -318,7 +218,7 @@ TEST(host_dirichlet_solver, one_cond_D2)
 	});
 }
 
-TEST(host_dirichlet_solver, one_cond_D3)
+TEST(device_dirichlet_solver, one_cond_D3)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 60, 60, 60 }, { 20, 20, 20 });
 
@@ -354,7 +254,7 @@ TEST(host_dirichlet_solver, one_cond_D3)
 		EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(2, 0, z)), 0.0012301364);
 
 		EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(0, 1, z)), 0.0012637526);
-		EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(1, 1, z)), 0.566124);
+		EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(1, 1, z)), 0.56612432);
 		EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(2, 1, z)), 0.0012637526);
 
 		EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(0, 2, z)), 0.0012301364);
@@ -375,36 +275,7 @@ TEST(host_dirichlet_solver, one_cond_D3)
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z'>(2, 2, 1)), 0.0012637526);
 }
 
-TEST(host_dirichlet_solver, multiple_cond_D1)
-{
-	cartesian_mesh mesh(1, { 0, 0, 0 }, { 100, 0, 0 }, { 20, 0, 0 });
-
-	index_t substrates_count = 2;
-	auto m = default_microenv(mesh);
-
-	add_dirichlet_at(m, substrates_count, { { 0, 0, 0 }, { 4, 0, 0 } }, { 1, 1 });
-
-	solver& s = device_solver_provider::get_solver();
-
-	s.initialize(m);
-
-	runit(s, m, s.diffusion.solve(m));
-
-	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
-
-	noarr::traverser(dens_l).for_dims<'x'>([&](auto t) {
-		auto s = t.state();
-
-		auto l = dens_l ^ noarr::fix(s);
-		if (noarr::get_index<'x'>(s) == 0 || noarr::get_index<'x'>(s) == 4)
-			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 1);
-		else
-			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.03846154);
-		EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 1), 0.0625);
-	});
-}
-
-TEST(host_dirichlet_solver, multiple_cond_D2)
+TEST(device_dirichlet_solver, multiple_cond_D2)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 60, 60, 0 }, { 20, 20, 0 });
 
@@ -446,7 +317,7 @@ TEST(host_dirichlet_solver, multiple_cond_D2)
 	});
 }
 
-TEST(host_dirichlet_solver, multiple_cond_D3)
+TEST(device_dirichlet_solver, multiple_cond_D3)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 60, 60, 60 }, { 20, 20, 20 });
 
@@ -490,7 +361,7 @@ TEST(host_dirichlet_solver, multiple_cond_D3)
 
 			auto l = dens_l ^ noarr::fix(s);
 
-			EXPECT_FLOAT_EQ((l | noarr::get_at<'z', 's'>(m.substrate_densities.get(), z, 0)), 0.566124);
+			EXPECT_FLOAT_EQ((l | noarr::get_at<'z', 's'>(m.substrate_densities.get(), z, 0)), 0.56612432);
 		});
 	}
 
@@ -503,46 +374,7 @@ TEST(host_dirichlet_solver, multiple_cond_D3)
 	});
 }
 
-TEST(host_gradient_solver, D1)
-{
-	cartesian_mesh mesh(1, { 0, 0, 0 }, { 100, 0, 0 }, { 20, 0, 0 });
-
-	index_t substrates_count = 2;
-	auto m = default_microenv(mesh);
-
-	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
-
-	// Set dummy densities
-	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
-	{
-		(dens_l | noarr::get_at<'s', 'x'>(m.substrate_densities.get(), 0, x)) = x * x;
-		(dens_l | noarr::get_at<'s', 'x'>(m.substrate_densities.get(), 1, m.mesh.grid_shape[0] - 1 - x)) = x * x;
-	}
-
-	solver& s = device_solver_provider::get_solver();
-
-	s.initialize(m);
-
-	runit(s, m, s.gradient.solve(m));
-
-	auto grad_l = layout_traits<1>::construct_gradient_layout(substrates_count, mesh.grid_shape);
-
-	auto gradients = noarr::make_bag(grad_l, m.gradients.get());
-
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 0)), (1 - 0) / 20.);
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 1)), (4 - 0) / 40.);
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 2)), (9 - 1) / 40.);
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 3)), (16 - 4) / 40.);
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 0, 4)), (16 - 9) / 20.);
-
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 4)), -(1 - 0) / 20.);
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 3)), -(4 - 0) / 40.);
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 2)), -(9 - 1) / 40.);
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 1)), -(16 - 4) / 40.);
-	EXPECT_FLOAT_EQ((gradients.at<'d', 's', 'x'>(0, 1, 0)), -(16 - 9) / 20.);
-}
-
-TEST(host_gradient_solver, D2)
+TEST(device_gradient_solver, D2)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 100, 100, 0 }, { 20, 20, 0 });
 
@@ -595,7 +427,7 @@ TEST(host_gradient_solver, D2)
 		}
 }
 
-TEST(host_gradient_solver, D3)
+TEST(device_gradient_solver, D3)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
 
@@ -662,37 +494,7 @@ TEST(host_gradient_solver, D3)
 			}
 }
 
-TEST(host_dirichlet_solver, boundaries_D1)
-{
-	cartesian_mesh mesh(1, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
-
-	index_t substrates_count = 2;
-	auto m = default_microenv(mesh);
-
-	add_boundary_dirichlet(m, substrates_count, 0, true, 4);
-	add_boundary_dirichlet(m, substrates_count, 0, false, 5);
-
-#pragma omp parallel
-	dirichlet_solver::solve(m);
-
-	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
-
-	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
-
-	for (index_t x = 0; x < m.mesh.grid_shape[0]; x++)
-	{
-		if (x == 0)
-			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 0)), 4);
-		else if (x == m.mesh.grid_shape[0] - 1)
-			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 0)), 5);
-		else
-			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 0)), 1);
-
-		EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 1)), 1);
-	}
-}
-
-TEST(host_dirichlet_solver, boundaries_D2)
+TEST(device_dirichlet_solver, boundaries_D2)
 {
 	cartesian_mesh mesh(2, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
 
@@ -704,8 +506,11 @@ TEST(host_dirichlet_solver, boundaries_D2)
 	add_boundary_dirichlet(m, substrates_count, 1, true, 6);
 	add_boundary_dirichlet(m, substrates_count, 1, false, 7);
 
-#pragma omp parallel
-	dirichlet_solver::solve(m);
+	solver& s = device_solver_provider::get_solver();
+
+	s.initialize(m);
+
+	runit(s, m, s.diffusion.dirichlet.solve(m));
 
 	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
 
@@ -744,7 +549,7 @@ TEST(host_dirichlet_solver, boundaries_D2)
 		}
 }
 
-TEST(host_dirichlet_solver, boundaries_D3)
+TEST(device_dirichlet_solver, boundaries_D3)
 {
 	cartesian_mesh mesh(3, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
 
@@ -758,8 +563,11 @@ TEST(host_dirichlet_solver, boundaries_D3)
 	add_boundary_dirichlet(m, substrates_count, 2, true, 8);
 	add_boundary_dirichlet(m, substrates_count, 2, false, 9);
 
-#pragma omp parallel
-	dirichlet_solver::solve(m);
+	solver& s = device_solver_provider::get_solver();
+
+	s.initialize(m);
+
+	runit(s, m, s.diffusion.dirichlet.solve(m));
 
 	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
 
@@ -808,88 +616,13 @@ TEST(host_dirichlet_solver, boundaries_D3)
 		}
 }
 
-class host_agents : public testing::TestWithParam<std::tuple<bool, bool>>
+class device_agents : public testing::TestWithParam<std::tuple<bool, bool>>
 {};
 
-INSTANTIATE_TEST_SUITE_P(recompute, host_agents,
+INSTANTIATE_TEST_SUITE_P(recompute, device_agents,
 						 testing::Combine(testing::Values(true, false), testing::Values(true, false)));
 
-TEST_P(host_agents, simple_D1)
-{
-	bool compute_internalized = std::get<0>(GetParam());
-	bool recompute = std::get<1>(GetParam());
-
-	cartesian_mesh mesh(1, { 0, 0, 0 }, { 60, 20, 20 }, { 20, 20, 20 });
-
-	auto m = default_microenv(mesh);
-	m.diffusion_time_step = 0.01;
-	m.compute_internalized_substrates = compute_internalized;
-
-	index_t substrates_count = 2;
-
-	auto a1 = m.agents->create_agent();
-	auto a2 = m.agents->create_agent();
-	auto a3 = m.agents->create_agent();
-
-	set_default_agent_values(a1, 0, 1000, { 10, 0, 0 }, 1);
-	set_default_agent_values(a2, 400, 1000, { 30, 0, 0 }, 1);
-	set_default_agent_values(a3, 800, 1000, { 50, 0, 0 }, 1);
-
-	solver& s = device_solver_provider::get_solver();
-	s.initialize(m);
-
-	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
-
-	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
-
-	runit(s, m, s.cell.simulate_secretion_and_uptake(m, true));
-
-	if (compute_internalized)
-	{
-		EXPECT_FLOAT_EQ(a1->internalized_substrates()[0], -216004.000000);
-		EXPECT_FLOAT_EQ(a1->internalized_substrates()[1], 0);
-
-		EXPECT_FLOAT_EQ(a2->internalized_substrates()[0], -1469060.631579);
-		EXPECT_FLOAT_EQ(a2->internalized_substrates()[1], 0);
-
-		EXPECT_FLOAT_EQ(a3->internalized_substrates()[0], -2927715.703704);
-		EXPECT_FLOAT_EQ(a3->internalized_substrates()[1], 0);
-	}
-
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(0, 0)), 28.000500);
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(0, 1)), 1);
-
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(1, 0)), 184.632579);
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(1, 1)), 1);
-
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 0)), 366.964463);
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 1)), 1);
-
-	runit(s, m, s.cell.simulate_secretion_and_uptake(m, recompute));
-
-	if (compute_internalized)
-	{
-		EXPECT_FLOAT_EQ(a1->internalized_substrates()[0], -216004.000000 + -157093.818182);
-		EXPECT_FLOAT_EQ(a1->internalized_substrates()[1], 0);
-
-		EXPECT_FLOAT_EQ(a2->internalized_substrates()[0], -1469060.631579 + -618551.844632);
-		EXPECT_FLOAT_EQ(a2->internalized_substrates()[1], 0);
-
-		EXPECT_FLOAT_EQ(a3->internalized_substrates()[0], -2927715.703704 + -867471.319407);
-		EXPECT_FLOAT_EQ(a3->internalized_substrates()[1], 0);
-	}
-
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(0, 0)), 47.637227);
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(0, 1)), 1);
-
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(1, 0)), 261.951560);
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(1, 1)), 1);
-
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 0)), 475.398378);
-	EXPECT_FLOAT_EQ((densities.at<'x', 's'>(2, 1)), 1);
-}
-
-TEST_P(host_agents, simple_D2)
+TEST_P(device_agents, simple_D2)
 {
 	bool compute_internalized = std::get<0>(GetParam());
 	bool recompute = std::get<1>(GetParam());
@@ -964,7 +697,7 @@ TEST_P(host_agents, simple_D2)
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 's'>(2, 2, 1)), 1);
 }
 
-TEST_P(host_agents, simple_D3)
+TEST_P(device_agents, simple_D3)
 {
 	bool compute_internalized = std::get<0>(GetParam());
 	bool recompute = std::get<1>(GetParam());
@@ -1039,7 +772,7 @@ TEST_P(host_agents, simple_D3)
 	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(2, 2, 2, 1)), 1);
 }
 
-TEST_P(host_agents, conflict)
+TEST_P(device_agents, conflict)
 {
 	bool compute_internalized = std::get<0>(GetParam());
 	bool recompute = std::get<1>(GetParam());
@@ -1127,7 +860,7 @@ TEST_P(host_agents, conflict)
 	}
 }
 
-TEST_P(host_agents, conflict_big)
+TEST_P(device_agents, conflict_big)
 {
 	bool compute_internalized = std::get<0>(GetParam());
 	bool recompute = std::get<1>(GetParam());
@@ -1212,6 +945,6 @@ TEST_P(host_agents, conflict_big)
 	}
 }
 
-} // namespace host
+} // namespace device
 } // namespace solvers
 } // namespace biofvm

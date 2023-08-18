@@ -9,6 +9,7 @@
 #include "../../traits.h"
 
 using namespace biofvm;
+using namespace solvers::host;
 
 index_t lcm(index_t a, index_t b)
 {
