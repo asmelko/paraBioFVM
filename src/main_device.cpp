@@ -65,6 +65,8 @@ int main()
 
 	s.initialize(m);
 
+	s.store_data_to_solver(m);
+
 	for (index_t i = 0; i < 100; ++i)
 	{
 		std::size_t diffusion_duration, gradient_duration, secretion_duration;

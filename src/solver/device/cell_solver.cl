@@ -3,6 +3,19 @@ typedef int index_t;
 
 #define no_ballot -1
 
+#ifndef __opencl_c_ext_fp32_global_atomic_add
+
+#ifdef NVIDIA
+float atomic_fetch_add_explicit(__global float* p, float val, int memory_order)
+{
+	float prev;
+	asm volatile("atom.global.add.f32 %0, [%1], %2;" : "=f"(prev) : "l"(p), "f"(val) : "memory");
+	return prev;
+}
+#endif
+
+#endif
+
 void compute_position_1d(global const real_t* restrict position, index_t x_min, index_t x_dt, index_t* restrict x)
 {
 	*x = (index_t)((position[0] - x_min) / x_dt);

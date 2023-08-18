@@ -67,7 +67,7 @@ if (BUILD_FOR_DEVICE)
 	)
 	FetchContent_Populate(opencl_headers)
 
-	include_directories(${opencl_headers_SOURCE_DIR})
+	set(OPENCL_ICD_LOADER_HEADERS_DIR ${opencl_headers_SOURCE_DIR} CACHE PATH "Path to OpenCL Headers")
 
 	FetchContent_Declare(
 		opencl_icd

@@ -4,6 +4,11 @@
 
 using namespace biofvm::solvers::device;
 
+bool is_nvidia(const cl::Context& c)
+{
+	return c.getInfo<CL_CONTEXT_DEVICES>()[0].getInfo<CL_DEVICE_VENDOR>().starts_with("NVIDIA");
+}
+
 opencl_solver::opencl_solver(device_context& ctx, const std::string& file_name)
 	: ctx_(ctx),
 	  kernel_fs_(file_name),
@@ -12,7 +17,12 @@ opencl_solver::opencl_solver(device_context& ctx, const std::string& file_name)
 {
 	try
 	{
-		program_.build("-cl-std=CL3.0 -w");
+		std::string build_parameters = "-cl-std=CL3.0 -w";
+
+		if (is_nvidia(ctx_.context))
+			build_parameters += " -DNVIDIA";
+
+		program_.build(build_parameters.c_str());
 	}
 	catch (...)
 	{
