@@ -15,3 +15,5 @@ void solver::initialize(microenvironment& m)
 void solver::store_data_to_solver(microenvironment& m) { ctx.copy_to_device(m); }
 
 void solver::load_data_from_solver(microenvironment& m) { ctx.copy_to_host(m); }
+
+void solver::wait_for_all() { ctx.queue.finish(); }

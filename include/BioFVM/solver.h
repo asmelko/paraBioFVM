@@ -1,21 +1,22 @@
 #pragma once
 
-#ifndef BioFVM_SOLVER_IMPL
-	#define BioFVM_SOLVER_IMPL host
-#endif
+#define BioFVM_HOST_SOLVER 0
+#define BioFVM_DEVICE_SOLVER 1
 
-
-#if 0
+#if BioFVM_SOLVER_IMPL == BioFVM_HOST_SOLVER
 	#include "../../src/solver/host/solver.h"
 
 namespace biofvm {
 using solver = solvers::host::solver;
 } // namespace biofvm
 
-#elif BioFVM_SOLVER_IMPL == device
+#endif
+
+#if BioFVM_SOLVER_IMPL == BioFVM_DEVICE_SOLVER
 	#include "../../src/solver/device/solver.h"
 
 namespace biofvm {
 using solver = solvers::device::solver;
 } // namespace biofvm
+
 #endif

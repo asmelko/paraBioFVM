@@ -1,7 +1,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "solver/host/solver.h"
+#include "solver/device/solver.h"
 
 using namespace biofvm;
 
@@ -61,25 +61,26 @@ int main()
 
 	make_agents(m, 2'000'000, true);
 
-	biofvm::solvers::host::solver s;
+	biofvm::solvers::device::solver s;
 
 	s.initialize(m);
 
 	for (index_t i = 0; i < 100; ++i)
 	{
 		std::size_t diffusion_duration, gradient_duration, secretion_duration;
-#pragma omp parallel private(diffusion_duration, gradient_duration, secretion_duration)
 		{
 			{
 				auto start = std::chrono::high_resolution_clock::now();
 
 				s.diffusion.solve(m);
+				s.wait_for_all();
 
 				auto end = std::chrono::high_resolution_clock::now();
 
 				diffusion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 			}
 
+#pragma omp parallel
 			{
 				auto start = std::chrono::high_resolution_clock::now();
 
@@ -87,6 +88,7 @@ int main()
 
 				auto end = std::chrono::high_resolution_clock::now();
 
+#pragma omp master
 				gradient_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 			}
 
@@ -94,13 +96,13 @@ int main()
 				auto start = std::chrono::high_resolution_clock::now();
 
 				s.cell.simulate_secretion_and_uptake(m, i % 10 == 0);
+				s.wait_for_all();
 
 				auto end = std::chrono::high_resolution_clock::now();
 
 				secretion_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 			}
 
-#pragma omp master
 			std::cout << "Diffusion time: " << diffusion_duration << " ms,\t Gradient time: " << gradient_duration
 					  << " ms,\t Secretion time: " << secretion_duration << " ms" << std::endl;
 		}
