@@ -1,5 +1,12 @@
-typedef float real_t;
 typedef int index_t;
+
+#ifdef DOUBLE
+typedef double real_t;
+typedef atomic_double atomic_real_t;
+#else
+typedef float real_t;
+typedef atomic_float atomic_real_t;
+#endif
 
 kernel void solve_slice_2d_x(global real_t* restrict densities, global const real_t* restrict b,
 							 global const real_t* restrict c, global const real_t* restrict e, index_t substrates_count,

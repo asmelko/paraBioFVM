@@ -1,18 +1,42 @@
-typedef float real_t;
 typedef int index_t;
+
+#ifdef DOUBLE
+
+	#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
+	#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable
+
+typedef double real_t;
+typedef atomic_double atomic_real_t;
+#else
+typedef float real_t;
+typedef atomic_float atomic_real_t;
+#endif
 
 #define no_ballot -1
 
 #ifndef __opencl_c_ext_fp32_global_atomic_add
 
-#ifdef NVIDIA
+	#ifdef NVIDIA
 float atomic_fetch_add_explicit(__global float* p, float val, int memory_order)
 {
 	float prev;
 	asm volatile("atom.global.add.f32 %0, [%1], %2;" : "=f"(prev) : "l"(p), "f"(val) : "memory");
 	return prev;
 }
+	#endif
+
 #endif
+
+#ifndef __opencl_c_ext_fp64_global_atomic_add
+
+	#ifdef NVIDIA
+double __attribute__((overloadable)) atomic_fetch_add_explicit(__global double* p, double val, int memory_order)
+{
+	double prev;
+	asm volatile("atom.global.add.f64 %0, [%1], %2;" : "=d"(prev) : "l"(p), "d"(val) : "memory");
+	return prev;
+}
+	#endif
 
 #endif
 
@@ -53,7 +77,7 @@ void compute_position_3d(global const real_t* restrict position, index_t x_min, 
 	*z = (index_t)((position[2] - z_min) / z_dt);
 }
 
-index_t compute_index_3d(global const float* restrict position, index_t x_min, index_t y_min, index_t z_min,
+index_t compute_index_3d(global const real_t* restrict position, index_t x_min, index_t y_min, index_t z_min,
 						 index_t x_dt, index_t y_dt, index_t z_dt, index_t x_size, index_t y_size, index_t z_size)
 {
 	index_t x = (index_t)((position[0] - x_min) / x_dt);
@@ -63,7 +87,7 @@ index_t compute_index_3d(global const float* restrict position, index_t x_min, i
 	return x + y * x_size + z * x_size * y_size;
 }
 
-index_t compute_index(global const float* restrict position, index_t x_min, index_t y_min, index_t z_min, index_t x_dt,
+index_t compute_index(global const real_t* restrict position, index_t x_min, index_t y_min, index_t z_min, index_t x_dt,
 					  index_t y_dt, index_t z_dt, index_t x_size, index_t y_size, index_t z_size, index_t dims)
 {
 	if (dims == 1)
@@ -124,9 +148,9 @@ kernel void compute_intermediates(global real_t* restrict numerators, global rea
 	factors[i * substrates_count + s] = net_export_rates[i * substrates_count + s] * time_step / voxel_volume;
 }
 
-kernel void ballot_and_sum(global atomic_float* restrict reduced_numerators,
-						   global atomic_float* restrict reduced_denominators,
-						   global atomic_float* restrict reduced_factors, global const real_t* restrict numerators,
+kernel void ballot_and_sum(global atomic_real_t* restrict reduced_numerators,
+						   global atomic_real_t* restrict reduced_denominators,
+						   global atomic_real_t* restrict reduced_factors, global const real_t* restrict numerators,
 						   global const real_t* restrict denominators, global const real_t* restrict factors,
 						   global const real_t* restrict cell_positions, global index_t* restrict ballots,
 						   global atomic_int* restrict is_conflict, index_t substrates_count, index_t x_min,

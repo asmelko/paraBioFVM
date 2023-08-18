@@ -22,6 +22,9 @@ opencl_solver::opencl_solver(device_context& ctx, const std::string& file_name)
 		if (is_nvidia(ctx_.context))
 			build_parameters += " -DNVIDIA";
 
+		if (sizeof(real_t) == 8)
+			build_parameters += " -DDOUBLE";
+
 		program_.build(build_parameters.c_str());
 	}
 	catch (...)

@@ -1,5 +1,12 @@
-typedef float real_t;
 typedef int index_t;
+
+#ifdef DOUBLE
+typedef double real_t;
+typedef atomic_double atomic_real_t;
+#else
+typedef float real_t;
+typedef atomic_float atomic_real_t;
+#endif
 
 kernel void solve_interior_2d(global real_t* restrict substrate_densities,
 							  global const index_t* restrict dirichlet_voxels,
