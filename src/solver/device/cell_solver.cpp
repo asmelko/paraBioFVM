@@ -7,6 +7,32 @@
 using namespace biofvm;
 using namespace solvers::device;
 
+void cell_solver::simulate_1d(microenvironment& m)
+{
+	index_t agents_count = get_agent_data(m).agents_count;
+
+	if (compute_internalized_substrates_ && fuse_)
+	{
+		compute_fused_1d_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(agents_count * m.substrates_count)),
+						  ctx_.internalized_substrates, ctx_.diffusion_substrates, reduced_numerators_,
+						  reduced_denominators_, reduced_factors_, ctx_.positions, m.mesh.voxel_volume(),
+						  m.substrates_count, m.mesh.bounding_box_mins[0], m.mesh.voxel_shape[0], m.mesh.grid_shape[0]);
+	}
+	else
+	{
+		if (compute_internalized_substrates_)
+			compute_internalized_1d_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(agents_count * m.substrates_count)),
+									 ctx_.internalized_substrates, ctx_.diffusion_substrates, numerators_,
+									 denominators_, factors_, ctx_.positions, m.mesh.voxel_volume(), m.substrates_count,
+									 m.mesh.bounding_box_mins[0], m.mesh.voxel_shape[0], m.mesh.grid_shape[0]);
+
+		compute_densities_1d_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(agents_count * m.substrates_count)),
+							  ctx_.diffusion_substrates, reduced_numerators_, reduced_denominators_, reduced_factors_,
+							  ctx_.positions, ballots_, m.mesh.voxel_volume(), m.substrates_count,
+							  m.mesh.bounding_box_mins[0], m.mesh.voxel_shape[0], m.mesh.grid_shape[0]);
+	}
+}
+
 void cell_solver::simulate_2d(microenvironment& m)
 {
 	index_t agents_count = get_agent_data(m).agents_count;
@@ -14,10 +40,10 @@ void cell_solver::simulate_2d(microenvironment& m)
 	if (compute_internalized_substrates_ && fuse_)
 	{
 		compute_fused_2d_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(agents_count * m.substrates_count)),
-						  ctx_.internalized_substrates, ctx_.diffusion_substrates, numerators_, denominators_, factors_,
-						  ctx_.positions, m.mesh.voxel_volume(), m.substrates_count, m.mesh.bounding_box_mins[0],
-						  m.mesh.bounding_box_mins[1], m.mesh.voxel_shape[0], m.mesh.voxel_shape[1],
-						  m.mesh.grid_shape[0], m.mesh.grid_shape[1]);
+						  ctx_.internalized_substrates, ctx_.diffusion_substrates, reduced_numerators_,
+						  reduced_denominators_, reduced_factors_, ctx_.positions, m.mesh.voxel_volume(),
+						  m.substrates_count, m.mesh.bounding_box_mins[0], m.mesh.bounding_box_mins[1],
+						  m.mesh.voxel_shape[0], m.mesh.voxel_shape[1], m.mesh.grid_shape[0], m.mesh.grid_shape[1]);
 	}
 	else
 	{
@@ -29,10 +55,10 @@ void cell_solver::simulate_2d(microenvironment& m)
 									 m.mesh.voxel_shape[1], m.mesh.grid_shape[0], m.mesh.grid_shape[1]);
 
 		compute_densities_2d_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(agents_count * m.substrates_count)),
-							  ctx_.diffusion_substrates, numerators_, denominators_, factors_, ctx_.positions, ballots_,
-							  m.mesh.voxel_volume(), m.substrates_count, m.mesh.bounding_box_mins[0],
-							  m.mesh.bounding_box_mins[1], m.mesh.voxel_shape[0], m.mesh.voxel_shape[1],
-							  m.mesh.grid_shape[0], m.mesh.grid_shape[1]);
+							  ctx_.diffusion_substrates, reduced_numerators_, reduced_denominators_, reduced_factors_,
+							  ctx_.positions, ballots_, m.mesh.voxel_volume(), m.substrates_count,
+							  m.mesh.bounding_box_mins[0], m.mesh.bounding_box_mins[1], m.mesh.voxel_shape[0],
+							  m.mesh.voxel_shape[1], m.mesh.grid_shape[0], m.mesh.grid_shape[1]);
 	}
 }
 
@@ -43,11 +69,11 @@ void cell_solver::simulate_3d(microenvironment& m)
 	if (compute_internalized_substrates_ && fuse_)
 	{
 		compute_fused_3d_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(agents_count * m.substrates_count)),
-						  ctx_.internalized_substrates, ctx_.diffusion_substrates, numerators_, denominators_, factors_,
-						  ctx_.positions, m.mesh.voxel_volume(), m.substrates_count, m.mesh.bounding_box_mins[0],
-						  m.mesh.bounding_box_mins[1], m.mesh.bounding_box_mins[2], m.mesh.voxel_shape[0],
-						  m.mesh.voxel_shape[1], m.mesh.voxel_shape[2], m.mesh.grid_shape[0], m.mesh.grid_shape[1],
-						  m.mesh.grid_shape[2]);
+						  ctx_.internalized_substrates, ctx_.diffusion_substrates, reduced_numerators_,
+						  reduced_denominators_, reduced_factors_, ctx_.positions, m.mesh.voxel_volume(),
+						  m.substrates_count, m.mesh.bounding_box_mins[0], m.mesh.bounding_box_mins[1],
+						  m.mesh.bounding_box_mins[2], m.mesh.voxel_shape[0], m.mesh.voxel_shape[1],
+						  m.mesh.voxel_shape[2], m.mesh.grid_shape[0], m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
 	}
 	else
 	{
@@ -62,11 +88,11 @@ void cell_solver::simulate_3d(microenvironment& m)
 		}
 
 		compute_densities_3d_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(agents_count * m.substrates_count)),
-							  ctx_.diffusion_substrates, numerators_, denominators_, factors_, ctx_.positions, ballots_,
-							  m.mesh.voxel_volume(), m.substrates_count, m.mesh.bounding_box_mins[0],
-							  m.mesh.bounding_box_mins[1], m.mesh.bounding_box_mins[2], m.mesh.voxel_shape[0],
-							  m.mesh.voxel_shape[1], m.mesh.voxel_shape[2], m.mesh.grid_shape[0], m.mesh.grid_shape[1],
-							  m.mesh.grid_shape[2]);
+							  ctx_.diffusion_substrates, reduced_numerators_, reduced_denominators_, reduced_factors_,
+							  ctx_.positions, ballots_, m.mesh.voxel_volume(), m.substrates_count,
+							  m.mesh.bounding_box_mins[0], m.mesh.bounding_box_mins[1], m.mesh.bounding_box_mins[2],
+							  m.mesh.voxel_shape[0], m.mesh.voxel_shape[1], m.mesh.voxel_shape[2], m.mesh.grid_shape[0],
+							  m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
 	}
 }
 
@@ -97,12 +123,16 @@ void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recomp
 						m.mesh.voxel_shape[0], m.mesh.voxel_shape[1], m.mesh.voxel_shape[2], m.mesh.grid_shape[0],
 						m.mesh.grid_shape[1], m.mesh.grid_shape[2], m.mesh.dims);
 
-		std::array<index_t, 1> is_conflict;
+		std::array<index_t, 1> is_conflict { 0 };
 		cl::copy(ctx_.queue, is_conflict_, is_conflict.begin(), is_conflict.end());
 		fuse_ = !is_conflict[0];
 	}
 
-	if (m.mesh.dims == 2)
+	if (m.mesh.dims == 1)
+	{
+		simulate_1d(m);
+	}
+	else if (m.mesh.dims == 2)
 	{
 		simulate_2d(m);
 	}
@@ -142,6 +172,7 @@ void cell_solver::initialize(microenvironment& m)
 {
 	capacity_ = 0;
 	compute_internalized_substrates_ = m.compute_internalized_substrates;
+	fuse_ = false;
 
 	resize(m);
 
@@ -154,6 +185,9 @@ cell_solver::cell_solver(device_context& ctx)
 	  clear_and_ballot_(this->program_, "clear_and_ballot"),
 	  compute_intermediates_(this->program_, "compute_intermediates"),
 	  ballot_and_sum_(this->program_, "ballot_and_sum"),
+	  compute_internalized_1d_(this->program_, "compute_internalized_1d"),
+	  compute_densities_1d_(this->program_, "compute_densities_1d"),
+	  compute_fused_1d_(this->program_, "compute_fused_1d"),
 	  compute_internalized_2d_(this->program_, "compute_internalized_2d"),
 	  compute_densities_2d_(this->program_, "compute_densities_2d"),
 	  compute_fused_2d_(this->program_, "compute_fused_2d"),

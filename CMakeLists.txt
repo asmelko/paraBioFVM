@@ -12,7 +12,8 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	include(FetchContent)
 	FetchContent_Declare(
 	  googletest
-	  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+	  GIT_REPOSITORY https://github.com/google/googletest.git
+	  GIT_TAG v1.14.0
 	)
 	# For Windows: Prevent overriding the parent project's compiler/linker settings
 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -27,16 +28,38 @@ FetchContent_Declare(
 )
 FetchContent_Populate(noarr_structures)
 
+FetchContent_Declare(
+	opencl_hpp
+	GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-CLHPP.git
+	GIT_TAG        v2023.04.17
+)
+FetchContent_Populate(opencl_hpp)
+
+FetchContent_Declare(
+	opencl_headers
+	GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
+	GIT_TAG        e049b16b5f157e2f28e7b5c301e71e1ccb3fe288
+)
+FetchContent_Populate(opencl_headers)
+
+include_directories(${opencl_headers_SOURCE_DIR})
+
+FetchContent_Declare(
+	opencl_icd
+	GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+	GIT_TAG        229410f86a8c8c9e0f86f195409e5481a2bae067
+)
+FetchContent_MakeAvailable(opencl_icd)
+
 # Target BioFVMCore
 file(GLOB_RECURSE src_files "src/*")
 list(FILTER src_files EXCLUDE REGEX ".*main\\..*")
 
 add_library(BioFVMCore OBJECT ${src_files})
 
-target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
+target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM ${opencl_hpp_SOURCE_DIR}/include)
 
 find_package(OpenMP REQUIRED)
-find_package(OpenCL REQUIRED)
 
 target_link_libraries(BioFVMCore PUBLIC OpenMP::OpenMP_CXX OpenCL::OpenCL)
 

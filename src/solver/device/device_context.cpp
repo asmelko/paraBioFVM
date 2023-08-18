@@ -6,8 +6,11 @@
 
 using namespace biofvm::solvers::device;
 
-device_context::device_context() : context(CL_DEVICE_TYPE_DEFAULT), queue(context), capacity(0)
+device_context::device_context(bool print_device_info) : context(CL_DEVICE_TYPE_DEFAULT), queue(context), capacity(0)
 {
+	if (!print_device_info)
+		return;
+
 	std::vector<cl::Device> devices;
 
 	std::vector<cl::Platform> platforms; // get all platforms
@@ -38,6 +41,8 @@ void device_context::initialize(microenvironment& m)
 {
 	diffusion_substrates =
 		cl::Buffer(context, CL_MEM_READ_WRITE, m.mesh.voxel_count() * m.substrates_count * sizeof(real_t));
+	
+	capacity = 0;
 }
 
 void device_context::resize(std::size_t new_capacity, microenvironment& m)
@@ -66,20 +71,24 @@ void device_context::copy_to_device(microenvironment& m)
 		resize(data.volumes.capacity(), m);
 	}
 
-	cl::copy(queue, data.secretion_rates.begin(), data.secretion_rates.begin() + data.agents_count * m.substrates_count,
-			 secretion_rates);
-	cl::copy(queue, data.saturation_densities.begin(),
-			 data.saturation_densities.begin() + data.agents_count * m.substrates_count, saturation_densities);
-	cl::copy(queue, data.uptake_rates.begin(), data.uptake_rates.begin() + data.agents_count * m.substrates_count,
-			 uptake_rates);
-	cl::copy(queue, data.net_export_rates.begin(),
-			 data.net_export_rates.begin() + data.agents_count * m.substrates_count, net_export_rates);
+	if (capacity != 0)
+	{
+		cl::copy(queue, data.secretion_rates.begin(),
+				 data.secretion_rates.begin() + data.agents_count * m.substrates_count, secretion_rates);
+		cl::copy(queue, data.saturation_densities.begin(),
+				 data.saturation_densities.begin() + data.agents_count * m.substrates_count, saturation_densities);
+		cl::copy(queue, data.uptake_rates.begin(), data.uptake_rates.begin() + data.agents_count * m.substrates_count,
+				 uptake_rates);
+		cl::copy(queue, data.net_export_rates.begin(),
+				 data.net_export_rates.begin() + data.agents_count * m.substrates_count, net_export_rates);
 
-	cl::copy(queue, data.internalized_substrates.begin(),
-			 data.internalized_substrates.begin() + data.agents_count * m.substrates_count, internalized_substrates);
+		cl::copy(queue, data.internalized_substrates.begin(),
+				 data.internalized_substrates.begin() + data.agents_count * m.substrates_count,
+				 internalized_substrates);
 
-	cl::copy(queue, data.volumes.begin(), data.volumes.begin() + data.agents_count, volumes);
-	cl::copy(queue, data.positions.begin(), data.positions.begin() + data.agents_count * m.mesh.dims, positions);
+		cl::copy(queue, data.volumes.begin(), data.volumes.begin() + data.agents_count, volumes);
+		cl::copy(queue, data.positions.begin(), data.positions.begin() + data.agents_count * m.mesh.dims, positions);
+	}
 }
 
 void device_context::copy_to_host(microenvironment& m)
@@ -89,18 +98,21 @@ void device_context::copy_to_host(microenvironment& m)
 
 	auto& data = get_agent_data(m);
 
-	cl::copy(queue, secretion_rates, data.secretion_rates.begin(),
-			 data.secretion_rates.begin() + data.agents_count * m.substrates_count);
-	cl::copy(queue, saturation_densities, data.saturation_densities.begin(),
-			 data.saturation_densities.begin() + data.agents_count * m.substrates_count);
-	cl::copy(queue, uptake_rates, data.uptake_rates.begin(),
-			 data.uptake_rates.begin() + data.agents_count * m.substrates_count);
-	cl::copy(queue, net_export_rates, data.net_export_rates.begin(),
-			 data.net_export_rates.begin() + data.agents_count * m.substrates_count);
+	if (capacity != 0)
+	{
+		cl::copy(queue, secretion_rates, data.secretion_rates.begin(),
+				 data.secretion_rates.begin() + data.agents_count * m.substrates_count);
+		cl::copy(queue, saturation_densities, data.saturation_densities.begin(),
+				 data.saturation_densities.begin() + data.agents_count * m.substrates_count);
+		cl::copy(queue, uptake_rates, data.uptake_rates.begin(),
+				 data.uptake_rates.begin() + data.agents_count * m.substrates_count);
+		cl::copy(queue, net_export_rates, data.net_export_rates.begin(),
+				 data.net_export_rates.begin() + data.agents_count * m.substrates_count);
 
-	cl::copy(queue, internalized_substrates, data.internalized_substrates.begin(),
-			 data.internalized_substrates.begin() + data.agents_count * m.substrates_count);
+		cl::copy(queue, internalized_substrates, data.internalized_substrates.begin(),
+				 data.internalized_substrates.begin() + data.agents_count * m.substrates_count);
 
-	cl::copy(queue, volumes, data.volumes.begin(), data.volumes.begin() + data.agents_count);
-	cl::copy(queue, positions, data.positions.begin(), data.positions.begin() + data.agents_count * m.mesh.dims);
+		cl::copy(queue, volumes, data.volumes.begin(), data.volumes.begin() + data.agents_count);
+		cl::copy(queue, positions, data.positions.begin(), data.positions.begin() + data.agents_count * m.mesh.dims);
+	}
 }

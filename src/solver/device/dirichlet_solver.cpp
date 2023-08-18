@@ -49,7 +49,7 @@ void dirichlet_solver::initialize(microenvironment& m)
 	{
 		dirichlet_interior_voxels =
 			cl::Buffer(ctx_.context, m.dirichlet_interior_voxels.get(),
-					   m.dirichlet_interior_voxels.get() + dirichlet_interior_voxels_count, true);
+					   m.dirichlet_interior_voxels.get() + dirichlet_interior_voxels_count * m.mesh.dims, true);
 		dirichlet_interior_conditions = cl::Buffer(
 			ctx_.context, m.dirichlet_interior_conditions.get(),
 			m.dirichlet_interior_conditions.get() + dirichlet_interior_voxels_count * m.substrates_count, true);
@@ -159,4 +159,12 @@ void dirichlet_solver::solve_3d(microenvironment& m)
 			ctx_.diffusion_substrates, dirichlet_interior_voxels, dirichlet_interior_values,
 			dirichlet_interior_conditions, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1],
 			m.mesh.grid_shape[2]);
+}
+
+void dirichlet_solver::solve(microenvironment& m)
+{
+	if (m.mesh.dims == 2)
+		solve_2d(m);
+	else if (m.mesh.dims == 3)
+		solve_3d(m);
 }

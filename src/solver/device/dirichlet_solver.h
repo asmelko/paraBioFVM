@@ -45,6 +45,8 @@ public:
 
 	void solve_2d(microenvironment& m);
 	void solve_3d(microenvironment& m);
+
+	void solve(microenvironment& m);
 };
 
 } // namespace device

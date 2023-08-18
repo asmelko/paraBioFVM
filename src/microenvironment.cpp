@@ -41,7 +41,8 @@ microenvironment::microenvironment(cartesian_mesh mesh, index_t substrates_count
 	  dirichlet_min_boundary_values({ nullptr, nullptr, nullptr }),
 	  dirichlet_max_boundary_values({ nullptr, nullptr, nullptr }),
 	  dirichlet_min_boundary_conditions({ nullptr, nullptr, nullptr }),
-	  dirichlet_max_boundary_conditions({ nullptr, nullptr, nullptr })
+	  dirichlet_max_boundary_conditions({ nullptr, nullptr, nullptr }),
+	  data_residency(solvers::data_residency::host)
 {
 	if (mesh.dims == 1)
 		initialize_substrate_densities<1>(substrate_densities.get(), initial_conditions, *this);

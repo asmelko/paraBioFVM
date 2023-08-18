@@ -36,7 +36,7 @@ public:
 	cl::Buffer volumes;
 	cl::Buffer positions;
 
-	device_context();
+	device_context(bool print_device_info = false);
 
 	void initialize(microenvironment& m);
 

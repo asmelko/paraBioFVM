@@ -1,23 +1,26 @@
 #pragma once
 
-#include "bulk_solver.h"
+#include "../host/gradient_solver.h"
 #include "cell_solver.h"
+#include "device_context.h"
 #include "diffusion_solver.h"
-#include "gradient_solver.h"
 
 namespace biofvm {
 namespace solvers {
-namespace host {
+namespace device {
 
 class solver
 {
-public:
-	static constexpr bool is_device_solver = false;
+	device_context ctx;
 
-	bulk_solver bulk;
+public:
+	solver(bool print_device_info = false);
+
+	static constexpr bool is_device_solver = true;
+
 	cell_solver cell;
 	diffusion_solver diffusion;
-	gradient_solver gradient;
+	host::gradient_solver gradient;
 
 	void initialize(microenvironment& m);
 
@@ -25,6 +28,6 @@ public:
 	void load_data_from_solver(microenvironment& m);
 };
 
-} // namespace host
+} // namespace device
 } // namespace solvers
 } // namespace biofvm

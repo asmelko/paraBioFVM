@@ -5,7 +5,7 @@
 #endif
 
 
-#if BioFVM_SOLVER_IMPL == host
+#if 0
 	#include "../../src/solver/host/solver.h"
 
 namespace biofvm {

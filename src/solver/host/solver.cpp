@@ -8,3 +8,7 @@ void solver::initialize(microenvironment& m)
 	cell.initialize(m);
 	diffusion.initialize(m);
 }
+
+void solver::store_data_to_solver(microenvironment&) {}
+
+void solver::load_data_from_solver(microenvironment&) {}

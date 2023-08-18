@@ -70,6 +70,9 @@ void add_dirichlet_at(microenvironment& m, index_t substrates_count, const std::
 	{
 		m.dirichlet_interior_values[i * substrates_count] = values[i];
 		m.dirichlet_interior_conditions[i * substrates_count] = true; // only the first substrate
+
+		for (int j = 1; j < m.substrates_count; j++)
+			m.dirichlet_interior_conditions[i * substrates_count + j] = false;
 	}
 }
 

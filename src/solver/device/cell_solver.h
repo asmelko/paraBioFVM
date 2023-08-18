@@ -62,6 +62,9 @@ class cell_solver : opencl_solver, common_solver
 					  index_t, index_t>
 		ballot_and_sum_;
 
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
+					  index_t, index_t>
+		compute_internalized_1d_, compute_densities_1d_, compute_fused_1d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
 					  index_t, index_t, index_t, index_t, index_t>
@@ -74,6 +77,7 @@ class cell_solver : opencl_solver, common_solver
 
 	void resize(microenvironment& m);
 
+	void simulate_1d(microenvironment& m);
 	void simulate_2d(microenvironment& m);
 	void simulate_3d(microenvironment& m);
 

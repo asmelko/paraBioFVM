@@ -12,8 +12,6 @@ class diffusion_solver : opencl_solver
 	cl::Buffer by_, cy_, ey_;
 	cl::Buffer bz_, cz_, ez_;
 
-	dirichlet_solver dirichlet_solver_;
-
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_slice_2d_x_,
 		solve_slice_2d_y_;
 
@@ -27,9 +25,14 @@ class diffusion_solver : opencl_solver
 public:
 	diffusion_solver(device_context& ctx);
 
+	dirichlet_solver dirichlet;
+
 	void initialize(microenvironment& m);
+
 	void solve_2d(microenvironment& m);
 	void solve_3d(microenvironment& m);
+
+	void solve(microenvironment& m);
 };
 
 } // namespace device
