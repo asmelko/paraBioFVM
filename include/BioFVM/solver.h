@@ -8,6 +8,7 @@
 
 namespace biofvm {
 using solver = solvers::host::solver;
+using cell_solver = solvers::host::cell_solver;
 } // namespace biofvm
 
 #endif
@@ -17,6 +18,7 @@ using solver = solvers::host::solver;
 
 namespace biofvm {
 using solver = solvers::device::solver;
+using cell_solver = solvers::device::cell_solver;
 } // namespace biofvm
 
 #endif
