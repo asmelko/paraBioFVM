@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_FOR_DEVICE "Build opencl device code" OFF)
+option(DOUBLE_PRECISION "Use double instead of float" OFF)
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	# Fetch Googletest
@@ -45,9 +46,14 @@ endif()
 
 target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
 
-find_package(OpenMP REQUIRED)
+if (DOUBLE_PRECISION)
+	target_compile_definitions(BioFVMCore PUBLIC USE_DOUBLE)
+endif()
 
-target_link_libraries(BioFVMCore PUBLIC OpenMP::OpenMP_CXX)
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(BioFVMCore PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 if (BUILD_FOR_DEVICE)
 
