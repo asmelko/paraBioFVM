@@ -1,6 +1,7 @@
 #include "opencl_solver.h"
 
 #include <iostream>
+#include <type_traits>
 
 using namespace biofvm::solvers::device;
 
@@ -17,12 +18,12 @@ opencl_solver::opencl_solver(device_context& ctx, const std::string& file_name)
 {
 	try
 	{
-		std::string build_parameters = "-cl-std=CL3.0 -w";
+		std::string build_parameters = "-cl-std=CL2.0 -w";
 
 		if (is_nvidia(ctx_.context))
 			build_parameters += " -DNVIDIA";
 
-		if (sizeof(real_t) == 8)
+		if (std::is_same_v<real_t, double>)
 			build_parameters += " -DDOUBLE";
 
 		program_.build(build_parameters.c_str());

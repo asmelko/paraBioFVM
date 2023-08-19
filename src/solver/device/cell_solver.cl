@@ -23,6 +23,12 @@ float atomic_fetch_add_explicit(__global float* p, float val, int memory_order)
 	asm volatile("atom.global.add.f32 %0, [%1], %2;" : "=f"(prev) : "l"(p), "f"(val) : "memory");
 	return prev;
 }
+	#else
+void atomic_fetch_add_explicit(__global atomic_float* source, float val, int memory_order)
+{
+	float expected = atomic_load_explicit(source, memory_order);
+	while (!atomic_compare_exchange_weak_explicit(source, &expected, expected + val, memory_order, memory_order)) {};
+}
 	#endif
 
 #endif
@@ -35,6 +41,13 @@ double __attribute__((overloadable)) atomic_fetch_add_explicit(__global double* 
 	double prev;
 	asm volatile("atom.global.add.f64 %0, [%1], %2;" : "=d"(prev) : "l"(p), "d"(val) : "memory");
 	return prev;
+}
+	#else
+void __attribute__((overloadable))
+atomic_fetch_add_explicit(__global atomic_double* source, double val, int memory_order)
+{
+	double expected = atomic_load_explicit(source, memory_order);
+	while (!atomic_compare_exchange_weak_explicit(source, &expected, expected + val, memory_order, memory_order)) {};
 }
 	#endif
 
