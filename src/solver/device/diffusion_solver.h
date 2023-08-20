@@ -40,7 +40,7 @@ class diffusion_solver : opencl_solver
 	cl::Buffer by_, cy_, ey_;
 	cl::Buffer bz_, cz_, ez_;
 
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_slice_2d_x_,
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_slice_2d_x_,
 		solve_slice_2d_y_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t>

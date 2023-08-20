@@ -52,13 +52,13 @@ void diffusion_solver::solve_2d(microenvironment& m)
 	dirichlet.solve_2d(m);
 
 	solve_slice_2d_x_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[1] * m.substrates_count)),
-					  ctx_.diffusion_substrates, bx_, cx_, ex_, m.substrates_count, m.mesh.grid_shape[0],
+					  ctx_.diffusion_substrates, bx_, cx_, m.substrates_count, m.mesh.grid_shape[0],
 					  m.mesh.grid_shape[1]);
 
 	dirichlet.solve_2d(m);
 
 	solve_slice_2d_y_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[0] * m.substrates_count)),
-					  ctx_.diffusion_substrates, by_, cy_, ey_, m.substrates_count, m.mesh.grid_shape[0],
+					  ctx_.diffusion_substrates, by_, cy_, m.substrates_count, m.mesh.grid_shape[0],
 					  m.mesh.grid_shape[1]);
 
 	dirichlet.solve_2d(m);
