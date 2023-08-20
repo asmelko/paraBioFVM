@@ -37,13 +37,17 @@ kernel void solve_slice_2d_x(global real_t* restrict densities, global const rea
 }
 
 kernel void solve_slice_3d_x(global real_t* restrict densities, global const real_t* restrict b,
-							 global const real_t* restrict c, global const real_t* restrict e, index_t substrates_count,
-							 index_t x_size, index_t y_size, index_t z_size)
+							 constant real_t* restrict c, index_t substrates_count, index_t x_size, index_t y_size,
+							 index_t z_size)
 {
 	int id = get_global_id(0);
 	index_t z = id / (y_size * substrates_count);
 	index_t y = (id / substrates_count) % y_size;
 	index_t s = id % substrates_count;
+
+	const real_t a = c[s];
+
+	real_t tmp = densities[(z * x_size * y_size + y * x_size) * substrates_count + s];
 
 	// for (index_t z = 0; z < z_size; z++)
 	{
@@ -53,26 +57,25 @@ kernel void solve_slice_3d_x(global real_t* restrict densities, global const rea
 			{
 				// for (index_t s = 0; s < substrates_count; s++)
 				{
-					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] -=
-						e[(x - 1) * substrates_count + s]
-						* densities[(z * x_size * y_size + y * x_size + x - 1) * substrates_count + s];
+					tmp = densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s]
+						  - a * b[(x - 1) * substrates_count + s] * tmp;
+					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] = tmp;
 				}
 			}
 
 			// for (index_t s = 0; s < substrates_count; s++)
 			{
-				densities[(z * x_size * y_size + y * x_size + x_size - 1) * substrates_count + s] *=
-					b[(x_size - 1) * substrates_count + s];
+				tmp *= b[(x_size - 1) * substrates_count + s];
+				densities[(z * x_size * y_size + y * x_size + x_size - 1) * substrates_count + s] = tmp;
 			}
 
 			for (index_t x = x_size - 2; x >= 0; x--) // serial
 			{
 				// for (index_t s = 0; s < substrates_count; s++)
 				{
-					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] =
-						(densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s]
-						 - c[s] * densities[(z * x_size * y_size + y * x_size + x + 1) * substrates_count + s])
-						* b[x * substrates_count + s];
+					tmp = (densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] - a * tmp)
+						  * b[x * substrates_count + s];
+					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] = tmp;
 				}
 			}
 		}
@@ -107,13 +110,17 @@ kernel void solve_slice_2d_y(global real_t* restrict densities, global const rea
 }
 
 kernel void solve_slice_3d_y(global real_t* restrict densities, global const real_t* restrict b,
-							 global const real_t* restrict c, global const real_t* restrict e, index_t substrates_count,
-							 index_t x_size, index_t y_size, index_t z_size)
+							 constant real_t* restrict c, index_t substrates_count, index_t x_size, index_t y_size,
+							 index_t z_size)
 {
 	int id = get_global_id(0);
 	index_t z = id / (x_size * substrates_count);
 	index_t x = (id / substrates_count) % x_size;
 	index_t s = id % substrates_count;
+
+	const real_t a = c[s];
+
+	real_t tmp = densities[(z * x_size * y_size + x) * substrates_count + s];
 
 	// for (index_t z = 0; z < z_size; z++)
 	{
@@ -123,9 +130,9 @@ kernel void solve_slice_3d_y(global real_t* restrict densities, global const rea
 			{
 				// for (index_t s = 0; s < substrates_count; s++)
 				{
-					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] -=
-						e[(y - 1) * substrates_count + s]
-						* densities[(z * x_size * y_size + (y - 1) * x_size + x) * substrates_count + s];
+					tmp = densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s]
+						  - a * b[(y - 1) * substrates_count + s] * tmp;
+					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] = tmp;
 				}
 			}
 		}
@@ -134,8 +141,8 @@ kernel void solve_slice_3d_y(global real_t* restrict densities, global const rea
 		{
 			// for (index_t s = 0; s < substrates_count; s++)
 			{
-				densities[(z * x_size * y_size + (y_size - 1) * x_size + x) * substrates_count + s] *=
-					b[(y_size - 1) * substrates_count + s];
+				tmp *= b[(y_size - 1) * substrates_count + s];
+				densities[(z * x_size * y_size + (y_size - 1) * x_size + x) * substrates_count + s] = tmp;
 			}
 		}
 
@@ -145,10 +152,9 @@ kernel void solve_slice_3d_y(global real_t* restrict densities, global const rea
 			{
 				// for (index_t s = 0; s < substrates_count; s++)
 				{
-					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] =
-						(densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s]
-						 - c[s] * densities[(z * x_size * y_size + (y + 1) * x_size + x) * substrates_count + s])
-						* b[y * substrates_count + s];
+					tmp = (densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] - a * tmp)
+						  * b[y * substrates_count + s];
+					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] = tmp;
 				}
 			}
 		}
@@ -156,13 +162,17 @@ kernel void solve_slice_3d_y(global real_t* restrict densities, global const rea
 }
 
 kernel void solve_slice_3d_z(global real_t* restrict densities, global const real_t* restrict b,
-							 global const real_t* restrict c, global const real_t* restrict e, index_t substrates_count,
-							 index_t x_size, index_t y_size, index_t z_size)
+							 constant real_t* restrict c, index_t substrates_count, index_t x_size, index_t y_size,
+							 index_t z_size)
 {
 	int id = get_global_id(0);
 	index_t y = id / (x_size * substrates_count);
 	index_t x = (id / substrates_count) % x_size;
 	index_t s = id % substrates_count;
+
+	const real_t a = c[s];
+
+	real_t tmp = densities[(y * x_size + x) * substrates_count + s];
 
 	for (index_t z = 1; z < z_size; z++) // serial
 	{
@@ -172,9 +182,9 @@ kernel void solve_slice_3d_z(global real_t* restrict densities, global const rea
 			{
 				// for (index_t s = 0; s < substrates_count; s++)
 				{
-					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] -=
-						e[(z - 1) * substrates_count + s]
-						* densities[((z - 1) * x_size * y_size + y * x_size + x) * substrates_count + s];
+					tmp = densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s]
+						  - a * b[(z - 1) * substrates_count + s] * tmp;
+					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] = tmp;
 				}
 			}
 		}
@@ -186,8 +196,8 @@ kernel void solve_slice_3d_z(global real_t* restrict densities, global const rea
 		{
 			// for (index_t s = 0; s < substrates_count; s++)
 			{
-				densities[((z_size - 1) * x_size * y_size + y * x_size + x) * substrates_count + s] *=
-					b[(z_size - 1) * substrates_count + s];
+				tmp *= b[(z_size - 1) * substrates_count + s];
+				densities[((z_size - 1) * x_size * y_size + y * x_size + x) * substrates_count + s] = tmp;
 			}
 		}
 	}
@@ -200,10 +210,9 @@ kernel void solve_slice_3d_z(global real_t* restrict densities, global const rea
 			{
 				// for (index_t s = 0; s < substrates_count; s++)
 				{
-					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] =
-						(densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s]
-						 - c[s] * densities[((z + 1) * x_size * y_size + y * x_size + x) * substrates_count + s])
-						* b[z * substrates_count + s];
+					tmp = (densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] - a * tmp)
+						  * b[z * substrates_count + s];
+					densities[(z * x_size * y_size + y * x_size + x) * substrates_count + s] = tmp;
 				}
 			}
 		}
