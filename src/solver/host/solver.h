@@ -23,6 +23,7 @@ public:
 
 	void store_data_to_solver(microenvironment& m);
 	void load_data_from_solver(microenvironment& m);
+	void wait_for_all();
 };
 
 } // namespace host
