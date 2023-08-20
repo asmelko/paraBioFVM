@@ -806,14 +806,11 @@ TEST_P(device_agents, conflict)
 
 	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
 
-	s.initialize(m);
-
 	auto& agent_data = dynamic_cast<agent_container*>(m.agents.get())->data();
 
 	std::vector<real_t> expected_internalized(agent_data.agents_count * m.substrates_count, 0);
 
 	compute_expected_agent_internalized_1d(m, expected_internalized);
-
 
 	runit(s, m, s.cell.simulate_secretion_and_uptake(m, true));
 
@@ -891,8 +888,6 @@ TEST_P(device_agents, conflict_big)
 	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape);
 
 	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
-
-	s.initialize(m);
 
 	auto& agent_data = dynamic_cast<agent_container*>(m.agents.get())->data();
 

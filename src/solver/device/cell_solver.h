@@ -40,39 +40,49 @@ namespace device {
 class cell_solver : opencl_solver, common_solver
 {
 	bool compute_internalized_substrates_;
-	bool fuse_;
 
 	std::size_t capacity_;
 
 	cl::Buffer numerators_, denominators_, factors_;
 	cl::Buffer reduced_numerators_, reduced_denominators_, reduced_factors_;
 	cl::Buffer ballots_;
-	cl::Buffer is_conflict_;
+	cl::Buffer conflicts_, conflicts_wrk_;
 
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t,
-					  index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t>
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
+					  index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t>
 		clear_and_ballot_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
-					  real_t, real_t, index_t>
-		compute_intermediates_;
-
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
-					  cl::Buffer, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t,
-					  index_t, index_t>
+					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t,
+					  real_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t,
+					  index_t>
 		ballot_and_sum_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
 					  index_t, index_t>
-		compute_internalized_1d_, compute_densities_1d_, compute_fused_1d_;
+		compute_densities_1d_;
+
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
+					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t>
+		compute_fused_1d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
 					  index_t, index_t, index_t, index_t, index_t>
-		compute_internalized_2d_, compute_densities_2d_, compute_fused_2d_;
+		compute_densities_2d_;
+
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
+					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t,
+					  index_t, index_t, index_t>
+		compute_fused_2d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
 					  index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t>
-		compute_internalized_3d_, compute_densities_3d_, compute_fused_3d_;
+		compute_densities_3d_;
+
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
+					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t,
+					  index_t, index_t, index_t, index_t, index_t, index_t>
+		compute_fused_3d_;
 
 
 	void resize(microenvironment& m);

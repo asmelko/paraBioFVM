@@ -114,59 +114,40 @@ index_t compute_index(global const real_t* restrict position, index_t x_min, ind
 
 kernel void clear_and_ballot(global const real_t* restrict cell_positions, global atomic_int* restrict ballots,
 							 global real_t* restrict reduced_numerators, global real_t* restrict reduced_denominators,
-							 global real_t* restrict reduced_factors, global int* restrict is_conflict,
-							 index_t substrates_count, index_t x_min, index_t y_min, index_t z_min, index_t x_dt,
-							 index_t y_dt, index_t z_dt, index_t x_size, index_t y_size, index_t z_size, index_t dims)
+							 global real_t* restrict reduced_factors, global int* restrict conflicts,
+							 global int* restrict conflicts_wrk, index_t substrates_count, index_t x_min, index_t y_min,
+							 index_t z_min, index_t x_dt, index_t y_dt, index_t z_dt, index_t x_size, index_t y_size,
+							 index_t z_size, index_t dims)
 {
 	int id = get_global_id(0);
 	index_t i = id / substrates_count;
 	index_t s = id % substrates_count;
 
+	index_t idx =
+		compute_index(cell_positions + i * dims, x_min, y_min, z_min, x_dt, y_dt, z_dt, x_size, y_size, z_size, dims);
+
 	if (s == 0)
 	{
-		index_t idx = compute_index(cell_positions + i * dims, x_min, y_min, z_min, x_dt, y_dt, z_dt, x_size, y_size,
-									z_size, dims);
-
 		atomic_store_explicit(ballots + idx, i, memory_order_relaxed);
-
-		if (i == 0)
-			is_conflict[0] = 0;
+		conflicts[i] = 0;
 	}
 
+	conflicts_wrk[i * substrates_count + s] = 0;
 	reduced_numerators[i * substrates_count + s] = 0;
 	reduced_denominators[i * substrates_count + s] = 0;
 	reduced_factors[i * substrates_count + s] = 0;
 }
 
-kernel void compute_intermediates(global real_t* restrict numerators, global real_t* restrict denominators,
-								  global real_t* restrict factors, global const real_t* restrict secretion_rates,
-								  global const real_t* restrict uptake_rates,
-								  global const real_t* restrict saturation_densities,
-								  global const real_t* restrict net_export_rates,
-								  global const real_t* restrict cell_volumes, real_t voxel_volume, real_t time_step,
-								  index_t substrates_count)
-{
-	int id = get_global_id(0);
-	index_t i = id / substrates_count;
-	index_t s = id % substrates_count;
-
-	numerators[i * substrates_count + s] = secretion_rates[i * substrates_count + s]
-										   * saturation_densities[i * substrates_count + s] * time_step
-										   * cell_volumes[i] / voxel_volume;
-
-	denominators[i * substrates_count + s] =
-		(uptake_rates[i * substrates_count + s] + secretion_rates[i * substrates_count + s]) * time_step
-		* cell_volumes[i] / voxel_volume;
-
-	factors[i * substrates_count + s] = net_export_rates[i * substrates_count + s] * time_step / voxel_volume;
-}
-
 kernel void ballot_and_sum(global atomic_real_t* restrict reduced_numerators,
 						   global atomic_real_t* restrict reduced_denominators,
-						   global atomic_real_t* restrict reduced_factors, global const real_t* restrict numerators,
-						   global const real_t* restrict denominators, global const real_t* restrict factors,
+						   global atomic_real_t* restrict reduced_factors, global real_t* restrict numerators,
+						   global real_t* restrict denominators, global real_t* restrict factors,
+						   global const real_t* restrict secretion_rates, global const real_t* restrict uptake_rates,
+						   global const real_t* restrict saturation_densities,
+						   global const real_t* restrict net_export_rates, global const real_t* restrict cell_volumes,
 						   global const real_t* restrict cell_positions, global index_t* restrict ballots,
-						   global atomic_int* restrict is_conflict, index_t substrates_count, index_t x_min,
+						   global atomic_int* restrict conflicts, global atomic_int* restrict conflicts_wrk,
+						   real_t voxel_volume, real_t time_step, index_t substrates_count, index_t x_min,
 						   index_t y_min, index_t z_min, index_t x_dt, index_t y_dt, index_t z_dt, index_t x_size,
 						   index_t y_size, index_t z_size, index_t dims)
 {
@@ -179,88 +160,25 @@ kernel void ballot_and_sum(global atomic_real_t* restrict reduced_numerators,
 
 	index_t add_one = idx == i ? 1 : 0;
 
-	if (idx != i)
-	{
-		atomic_store_explicit(is_conflict, 1, memory_order_relaxed);
-	}
+	if (s == 0)
+		atomic_fetch_add_explicit(conflicts + idx, 1, memory_order_relaxed);
+	atomic_fetch_add_explicit(conflicts_wrk + idx * substrates_count + s, 1, memory_order_relaxed);
 
-	atomic_fetch_add_explicit(reduced_numerators + idx * substrates_count + s, numerators[i * substrates_count + s],
-							  memory_order_relaxed);
-	atomic_fetch_add_explicit(reduced_denominators + idx * substrates_count + s,
-							  denominators[i * substrates_count + s] + add_one, memory_order_relaxed);
-	atomic_fetch_add_explicit(reduced_factors + idx * substrates_count + s, factors[i * substrates_count + s],
-							  memory_order_relaxed);
-}
+	float num = secretion_rates[i * substrates_count + s] * saturation_densities[i * substrates_count + s] * time_step
+				* cell_volumes[i] / voxel_volume;
 
-kernel void compute_internalized_1d(global real_t* restrict internalized_substrates,
-									global const real_t* restrict substrate_densities,
-									global const real_t* restrict numerator, global const real_t* restrict denominator,
-									global const real_t* restrict factor, global const real_t* restrict cell_positions,
-									real_t voxel_volume, index_t substrates_count, index_t x_min, index_t x_dt,
-									index_t x_size)
-{
-	int id = get_global_id(0);
-	index_t i = id / substrates_count;
-	index_t s = id % substrates_count;
+	float denom = (uptake_rates[i * substrates_count + s] + secretion_rates[i * substrates_count + s]) * time_step
+				  * cell_volumes[i] / voxel_volume;
 
-	index_t x;
+	float factor = net_export_rates[i * substrates_count + s] * time_step / voxel_volume;
 
-	compute_position_1d(cell_positions + i, x_min, x_dt, &x);
+	numerators[i * substrates_count + s] = num;
+	denominators[i * substrates_count + s] = denom;
+	factors[i * substrates_count + s] = factor;
 
-	internalized_substrates[i * substrates_count + s] -=
-		voxel_volume
-		* ((-denominator[i * substrates_count + s] * substrate_densities[x * substrates_count + s]
-			+ numerator[i * substrates_count + s])
-			   / (1 + denominator[i * substrates_count + s])
-		   + factor[i * substrates_count + s]);
-}
-
-kernel void compute_internalized_2d(global real_t* restrict internalized_substrates,
-									global const real_t* restrict substrate_densities,
-									global const real_t* restrict numerator, global const real_t* restrict denominator,
-									global const real_t* restrict factor, global const real_t* restrict cell_positions,
-									real_t voxel_volume, index_t substrates_count, index_t x_min, index_t y_min,
-									index_t x_dt, index_t y_dt, index_t x_size, index_t y_size)
-{
-	int id = get_global_id(0);
-	index_t i = id / substrates_count;
-	index_t s = id % substrates_count;
-
-	index_t x, y;
-
-	compute_position_2d(cell_positions + i * 2, x_min, y_min, x_dt, y_dt, &x, &y);
-
-	internalized_substrates[i * substrates_count + s] -=
-		voxel_volume
-		* ((-denominator[i * substrates_count + s] * substrate_densities[(y * x_size + x) * substrates_count + s]
-			+ numerator[i * substrates_count + s])
-			   / (1 + denominator[i * substrates_count + s])
-		   + factor[i * substrates_count + s]);
-}
-
-kernel void compute_internalized_3d(global real_t* restrict internalized_substrates,
-									global const real_t* restrict substrate_densities,
-									global const real_t* restrict numerator, global const real_t* restrict denominator,
-									global const real_t* restrict factor, global const real_t* restrict cell_positions,
-									real_t voxel_volume, index_t substrates_count, index_t x_min, index_t y_min,
-									index_t z_min, index_t x_dt, index_t y_dt, index_t z_dt, index_t x_size,
-									index_t y_size, index_t z_size)
-{
-	int id = get_global_id(0);
-	index_t i = id / substrates_count;
-	index_t s = id % substrates_count;
-
-	index_t x, y, z;
-
-	compute_position_3d(cell_positions + i * 3, x_min, y_min, z_min, x_dt, y_dt, z_dt, &x, &y, &z);
-
-	internalized_substrates[i * substrates_count + s] -=
-		voxel_volume
-		* ((-denominator[i * substrates_count + s]
-				* substrate_densities[((z * y_size + y) * x_size + x) * substrates_count + s]
-			+ numerator[i * substrates_count + s])
-			   / (1 + denominator[i * substrates_count + s])
-		   + factor[i * substrates_count + s]);
+	atomic_fetch_add_explicit(reduced_numerators + idx * substrates_count + s, num, memory_order_relaxed);
+	atomic_fetch_add_explicit(reduced_denominators + idx * substrates_count + s, denom + add_one, memory_order_relaxed);
+	atomic_fetch_add_explicit(reduced_factors + idx * substrates_count + s, factor, memory_order_relaxed);
 }
 
 kernel void compute_densities_1d(global real_t* restrict substrate_densities, global const real_t* restrict numerator,
@@ -343,8 +261,12 @@ kernel void compute_densities_3d(global real_t* restrict substrate_densities, gl
 kernel void compute_fused_1d(global real_t* restrict internalized_substrates,
 							 global real_t* restrict substrate_densities, global const real_t* restrict numerator,
 							 global const real_t* restrict denominator, global const real_t* restrict factor,
-							 global const real_t* restrict cell_positions, real_t voxel_volume,
-							 index_t substrates_count, index_t x_min, index_t x_dt, index_t x_size)
+							 global const real_t* restrict reduced_numerator,
+							 global const real_t* restrict reduced_denominator,
+							 global const real_t* restrict reduced_factor, global const real_t* restrict cell_positions,
+							 global const index_t* ballots, global const int* conflicts,
+							 global atomic_int* conflicts_wrk, real_t voxel_volume, index_t substrates_count,
+							 index_t x_min, index_t x_dt, index_t x_size)
 {
 	int id = get_global_id(0);
 	index_t i = id / substrates_count;
@@ -356,23 +278,35 @@ kernel void compute_fused_1d(global real_t* restrict internalized_substrates,
 
 	internalized_substrates[i * substrates_count + s] -=
 		voxel_volume
-		* (((1 - denominator[i * substrates_count + s]) * substrate_densities[x * substrates_count + s]
+		* ((-denominator[i * substrates_count + s] * substrate_densities[x * substrates_count + s]
 			+ numerator[i * substrates_count + s])
-			   / denominator[i * substrates_count + s]
+			   / (1 + denominator[i * substrates_count + s])
 		   + factor[i * substrates_count + s]);
 
+	index_t idx = ballots[x];
+
+	int val = atomic_fetch_sub_explicit(conflicts_wrk + idx * substrates_count + s, 1, memory_order_acq_rel);
+
+	if (val != 1)
+		return;
+
 	substrate_densities[x * substrates_count + s] =
-		(substrate_densities[x * substrates_count + s] + numerator[i * substrates_count + s])
-			/ denominator[i * substrates_count + s]
-		+ factor[i * substrates_count + s];
+		(substrate_densities[x * substrates_count + s] + reduced_numerator[idx * substrates_count + s])
+			/ reduced_denominator[idx * substrates_count + s]
+		+ reduced_factor[idx * substrates_count + s];
+
+	atomic_store_explicit(conflicts_wrk + idx * substrates_count + s, conflicts[idx], memory_order_relaxed);
 }
 
 kernel void compute_fused_2d(global real_t* restrict internalized_substrates,
 							 global real_t* restrict substrate_densities, global const real_t* restrict numerator,
 							 global const real_t* restrict denominator, global const real_t* restrict factor,
-							 global const real_t* restrict cell_positions, real_t voxel_volume,
-							 index_t substrates_count, index_t x_min, index_t y_min, index_t x_dt, index_t y_dt,
-							 index_t x_size, index_t y_size)
+							 global const real_t* restrict reduced_numerator,
+							 global const real_t* restrict reduced_denominator,
+							 global const real_t* restrict reduced_factor, global const real_t* restrict cell_positions,
+							 global const index_t* ballots, global const int* conflicts,
+							 global atomic_int* conflicts_wrk, real_t voxel_volume, index_t substrates_count,
+							 index_t x_min, index_t y_min, index_t x_dt, index_t y_dt, index_t x_size, index_t y_size)
 {
 	int id = get_global_id(0);
 	index_t i = id / substrates_count;
@@ -384,23 +318,36 @@ kernel void compute_fused_2d(global real_t* restrict internalized_substrates,
 
 	internalized_substrates[i * substrates_count + s] -=
 		voxel_volume
-		* (((1 - denominator[i * substrates_count + s]) * substrate_densities[(y * x_size + x) * substrates_count + s]
+		* ((-denominator[i * substrates_count + s] * substrate_densities[(y * x_size + x) * substrates_count + s]
 			+ numerator[i * substrates_count + s])
-			   / denominator[i * substrates_count + s]
+			   / (1 + denominator[i * substrates_count + s])
 		   + factor[i * substrates_count + s]);
 
+	index_t idx = ballots[y * x_size + x];
+
+	int val = atomic_fetch_sub_explicit(conflicts_wrk + idx * substrates_count + s, 1, memory_order_acq_rel);
+
+	if (val != 1)
+		return;
+
 	substrate_densities[(y * x_size + x) * substrates_count + s] =
-		(substrate_densities[(y * x_size + x) * substrates_count + s] + numerator[i * substrates_count + s])
-			/ denominator[i * substrates_count + s]
-		+ factor[i * substrates_count + s];
+		(substrate_densities[(y * x_size + x) * substrates_count + s] + reduced_numerator[idx * substrates_count + s])
+			/ reduced_denominator[idx * substrates_count + s]
+		+ reduced_factor[idx * substrates_count + s];
+
+	atomic_store_explicit(conflicts_wrk + idx * substrates_count + s, conflicts[idx], memory_order_relaxed);
 }
 
 kernel void compute_fused_3d(global real_t* restrict internalized_substrates,
 							 global real_t* restrict substrate_densities, global const real_t* restrict numerator,
 							 global const real_t* restrict denominator, global const real_t* restrict factor,
-							 global const real_t* restrict cell_positions, real_t voxel_volume,
-							 index_t substrates_count, index_t x_min, index_t y_min, index_t z_min, index_t x_dt,
-							 index_t y_dt, index_t z_dt, index_t x_size, index_t y_size, index_t z_size)
+							 global const real_t* restrict reduced_numerator,
+							 global const real_t* restrict reduced_denominator,
+							 global const real_t* restrict reduced_factor, global const real_t* restrict cell_positions,
+							 global const index_t* ballots, global const int* conflicts,
+							 global atomic_int* conflicts_wrk, real_t voxel_volume, index_t substrates_count,
+							 index_t x_min, index_t y_min, index_t z_min, index_t x_dt, index_t y_dt, index_t z_dt,
+							 index_t x_size, index_t y_size, index_t z_size)
 {
 	int id = get_global_id(0);
 	index_t i = id / substrates_count;
@@ -412,15 +359,24 @@ kernel void compute_fused_3d(global real_t* restrict internalized_substrates,
 
 	internalized_substrates[i * substrates_count + s] -=
 		voxel_volume
-		* (((1 - denominator[i * substrates_count + s])
+		* ((-denominator[i * substrates_count + s]
 				* substrate_densities[((z * y_size + y) * x_size + x) * substrates_count + s]
 			+ numerator[i * substrates_count + s])
-			   / denominator[i * substrates_count + s]
+			   / (1 + denominator[i * substrates_count + s])
 		   + factor[i * substrates_count + s]);
+
+	index_t idx = ballots[(z * y_size + y) * x_size + x];
+
+	int val = atomic_fetch_sub_explicit(conflicts_wrk + idx * substrates_count + s, 1, memory_order_acq_rel);
+
+	if (val != 1)
+		return;
 
 	substrate_densities[((z * y_size + y) * x_size + x) * substrates_count + s] =
 		(substrate_densities[((z * y_size + y) * x_size + x) * substrates_count + s]
-		 + numerator[i * substrates_count + s])
-			/ denominator[i * substrates_count + s]
-		+ factor[i * substrates_count + s];
+		 + reduced_numerator[idx * substrates_count + s])
+			/ reduced_denominator[idx * substrates_count + s]
+		+ reduced_factor[idx * substrates_count + s];
+
+	atomic_store_explicit(conflicts_wrk + idx * substrates_count + s, conflicts[idx], memory_order_relaxed);
 }
