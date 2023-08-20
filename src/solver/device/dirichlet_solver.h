@@ -29,11 +29,12 @@ class dirichlet_solver : opencl_solver
 	cl::Buffer dirichlet_interior_values;
 	cl::Buffer dirichlet_interior_conditions;
 
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t> solve_boundary_2d_x_,
-		solve_boundary_2d_y_;
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
+					  cl::Buffer, index_t, index_t, index_t>
+		solve_boundary_2d_;
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_interior_2d_;
 
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t, index_t>
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t>
 		solve_boundary_3d_x_, solve_boundary_3d_y_, solve_boundary_3d_z_;
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t>
 		solve_interior_3d_;
