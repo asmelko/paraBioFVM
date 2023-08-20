@@ -1,5 +1,6 @@
 #include "opencl_solver.h"
 
+#include <fstream>
 #include <iostream>
 #include <type_traits>
 
@@ -10,14 +11,21 @@ bool is_nvidia(const cl::Context& c)
 	return c.getInfo<CL_CONTEXT_DEVICES>()[0].getInfo<CL_DEVICE_VENDOR>().starts_with("NVIDIA");
 }
 
-opencl_solver::opencl_solver(device_context& ctx, const std::string& file_name)
-	: ctx_(ctx),
-	  kernel_fs_(file_name),
-	  kernel_code_(std::istreambuf_iterator<char>(kernel_fs_), (std::istreambuf_iterator<char>())),
-	  program_(ctx_.context, kernel_code_, false)
+opencl_solver::opencl_solver(device_context& ctx, const std::string& file_name) : ctx_(ctx)
 {
 	try
 	{
+		std::ifstream kernel_fs;
+
+		kernel_fs.open(file_name);
+
+		if (!kernel_fs.is_open())
+			throw std::runtime_error("Could not open kernel file: " + file_name);
+
+		std::string kernel_code(std::istreambuf_iterator<char>(kernel_fs), (std::istreambuf_iterator<char>()));
+
+		program_ = cl::Program(ctx_.context, kernel_code, false);
+
 		std::string build_parameters = "-cl-std=CL2.0 -w";
 
 		if (is_nvidia(ctx_.context))
