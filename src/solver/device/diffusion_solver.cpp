@@ -51,13 +51,13 @@ void diffusion_solver::solve_2d(microenvironment& m)
 {
 	dirichlet.solve_2d(m);
 
-	solve_slice_2d_x_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[1] * m.substrates_count)),
+	solve_slice_2d_x_(cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(m.mesh.grid_shape[1] * m.substrates_count)),
 					  ctx_.diffusion_substrates, bx_, cx_, m.substrates_count, m.mesh.grid_shape[0],
 					  m.mesh.grid_shape[1]);
 
 	dirichlet.solve_2d(m);
 
-	solve_slice_2d_y_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[0] * m.substrates_count)),
+	solve_slice_2d_y_(cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(m.mesh.grid_shape[0] * m.substrates_count)),
 					  ctx_.diffusion_substrates, by_, cy_, m.substrates_count, m.mesh.grid_shape[0],
 					  m.mesh.grid_shape[1]);
 
@@ -68,24 +68,24 @@ void diffusion_solver::solve_3d(microenvironment& m)
 {
 	dirichlet.solve_3d(m);
 
-	solve_slice_3d_x_(
-		cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[1] * m.mesh.grid_shape[2] * m.substrates_count)),
-		ctx_.diffusion_substrates, bx_, cx_, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1],
-		m.mesh.grid_shape[2]);
+	solve_slice_3d_x_(cl::EnqueueArgs(ctx_.substrates_queue,
+									  cl::NDRange(m.mesh.grid_shape[1] * m.mesh.grid_shape[2] * m.substrates_count)),
+					  ctx_.diffusion_substrates, bx_, cx_, m.substrates_count, m.mesh.grid_shape[0],
+					  m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
 
 	dirichlet.solve_3d(m);
 
-	solve_slice_3d_y_(
-		cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[0] * m.mesh.grid_shape[2] * m.substrates_count)),
-		ctx_.diffusion_substrates, by_, cy_, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1],
-		m.mesh.grid_shape[2]);
+	solve_slice_3d_y_(cl::EnqueueArgs(ctx_.substrates_queue,
+									  cl::NDRange(m.mesh.grid_shape[0] * m.mesh.grid_shape[2] * m.substrates_count)),
+					  ctx_.diffusion_substrates, by_, cy_, m.substrates_count, m.mesh.grid_shape[0],
+					  m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
 
 	dirichlet.solve_3d(m);
 
-	solve_slice_3d_z_(
-		cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[0] * m.mesh.grid_shape[1] * m.substrates_count)),
-		ctx_.diffusion_substrates, bz_, cz_, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1],
-		m.mesh.grid_shape[2]);
+	solve_slice_3d_z_(cl::EnqueueArgs(ctx_.substrates_queue,
+									  cl::NDRange(m.mesh.grid_shape[0] * m.mesh.grid_shape[1] * m.substrates_count)),
+					  ctx_.diffusion_substrates, bz_, cz_, m.substrates_count, m.mesh.grid_shape[0],
+					  m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
 
 	dirichlet.solve_3d(m);
 }

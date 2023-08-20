@@ -19,7 +19,8 @@ private:
 
 public:
 	cl::Context context;
-	cl::CommandQueue queue;
+	cl::CommandQueue substrates_queue;
+	cl::CommandQueue cell_data_queue;
 
 	cl::Buffer diffusion_substrates;
 

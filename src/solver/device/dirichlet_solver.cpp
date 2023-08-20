@@ -74,8 +74,8 @@ void dirichlet_solver::solve_2d(microenvironment& m)
 		|| m.dirichlet_max_boundary_values[1])
 	{
 		solve_boundary_2d_(
-			cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[1] * m.substrates_count * 2
-													+ m.mesh.grid_shape[0] * m.substrates_count * 2)),
+			cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(m.mesh.grid_shape[1] * m.substrates_count * 2
+															   + m.mesh.grid_shape[0] * m.substrates_count * 2)),
 			ctx_.diffusion_substrates, dirichlet_min_boundary_values_[0], dirichlet_max_boundary_values_[0],
 			dirichlet_min_boundary_conditions_[0], dirichlet_max_boundary_conditions_[0],
 			dirichlet_min_boundary_values_[1], dirichlet_max_boundary_values_[1], dirichlet_min_boundary_conditions_[1],
@@ -84,7 +84,7 @@ void dirichlet_solver::solve_2d(microenvironment& m)
 
 	if (dirichlet_interior_voxels_count)
 		solve_interior_2d_(
-			cl::EnqueueArgs(ctx_.queue, cl::NDRange(dirichlet_interior_voxels_count * m.substrates_count)),
+			cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(dirichlet_interior_voxels_count * m.substrates_count)),
 			ctx_.diffusion_substrates, dirichlet_interior_voxels, dirichlet_interior_values,
 			dirichlet_interior_conditions, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1]);
 }
@@ -93,37 +93,37 @@ void dirichlet_solver::solve_3d(microenvironment& m)
 {
 	if (m.dirichlet_min_boundary_values[0] || m.dirichlet_max_boundary_values[0])
 	{
-		solve_boundary_3d_x_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[1] * m.mesh.grid_shape[2]
-																	 * m.substrates_count * 2)),
-							 ctx_.diffusion_substrates, dirichlet_min_boundary_values_[0],
-							 dirichlet_max_boundary_values_[0], dirichlet_min_boundary_conditions_[0],
-							 dirichlet_max_boundary_conditions_[0], m.substrates_count, m.mesh.grid_shape[0],
-							 m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
+		solve_boundary_3d_x_(
+			cl::EnqueueArgs(ctx_.substrates_queue,
+							cl::NDRange(m.mesh.grid_shape[1] * m.mesh.grid_shape[2] * m.substrates_count * 2)),
+			ctx_.diffusion_substrates, dirichlet_min_boundary_values_[0], dirichlet_max_boundary_values_[0],
+			dirichlet_min_boundary_conditions_[0], dirichlet_max_boundary_conditions_[0], m.substrates_count,
+			m.mesh.grid_shape[0], m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
 	}
 
 	if (m.dirichlet_min_boundary_values[1] || m.dirichlet_max_boundary_values[1])
 	{
-		solve_boundary_3d_y_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[0] * m.mesh.grid_shape[2]
-																	 * m.substrates_count * 2)),
-							 ctx_.diffusion_substrates, dirichlet_min_boundary_values_[1],
-							 dirichlet_max_boundary_values_[1], dirichlet_min_boundary_conditions_[1],
-							 dirichlet_max_boundary_conditions_[1], m.substrates_count, m.mesh.grid_shape[0],
-							 m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
+		solve_boundary_3d_y_(
+			cl::EnqueueArgs(ctx_.substrates_queue,
+							cl::NDRange(m.mesh.grid_shape[0] * m.mesh.grid_shape[2] * m.substrates_count * 2)),
+			ctx_.diffusion_substrates, dirichlet_min_boundary_values_[1], dirichlet_max_boundary_values_[1],
+			dirichlet_min_boundary_conditions_[1], dirichlet_max_boundary_conditions_[1], m.substrates_count,
+			m.mesh.grid_shape[0], m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
 	}
 
 	if (m.dirichlet_min_boundary_values[2] || m.dirichlet_max_boundary_values[2])
 	{
-		solve_boundary_3d_z_(cl::EnqueueArgs(ctx_.queue, cl::NDRange(m.mesh.grid_shape[0] * m.mesh.grid_shape[1]
-																	 * m.substrates_count * 2)),
-							 ctx_.diffusion_substrates, dirichlet_min_boundary_values_[2],
-							 dirichlet_max_boundary_values_[2], dirichlet_min_boundary_conditions_[2],
-							 dirichlet_max_boundary_conditions_[2], m.substrates_count, m.mesh.grid_shape[0],
-							 m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
+		solve_boundary_3d_z_(
+			cl::EnqueueArgs(ctx_.substrates_queue,
+							cl::NDRange(m.mesh.grid_shape[0] * m.mesh.grid_shape[1] * m.substrates_count * 2)),
+			ctx_.diffusion_substrates, dirichlet_min_boundary_values_[2], dirichlet_max_boundary_values_[2],
+			dirichlet_min_boundary_conditions_[2], dirichlet_max_boundary_conditions_[2], m.substrates_count,
+			m.mesh.grid_shape[0], m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
 	}
 
 	if (dirichlet_interior_voxels_count)
 		solve_interior_3d_(
-			cl::EnqueueArgs(ctx_.queue, cl::NDRange(dirichlet_interior_voxels_count * m.substrates_count)),
+			cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(dirichlet_interior_voxels_count * m.substrates_count)),
 			ctx_.diffusion_substrates, dirichlet_interior_voxels, dirichlet_interior_values,
 			dirichlet_interior_conditions, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1],
 			m.mesh.grid_shape[2]);
