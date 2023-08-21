@@ -17,17 +17,15 @@ substitute dx accordingly to dy/dz
 Since the matrix is constant for multiple right hand sides, we precompute its values in the following way:
 b_1'  == 1/b_1
 b_i'  == 1/(b_i - a_i*c_i*b_(i-1)')                           1 <  i <= n
-e_i   == a_i*b_(i-1)'                                         1 <  i <= n
 
 Then, the forward substitution is as follows (n multiplication + n subtractions):
-d_i'  == d_i - e_i*d_(i-1)                                    1 <  i <= n
+d_i'  == d_i - a_i*b_i*d_(i-1)                                1 <  i <= n
 The backpropagation (2n multiplication + n subtractions):
 d_n'' == d_n'/b_n'
 d_i'' == (d_i' - c_i*d_(i+1)'')*b_i'                          n >  i >= 1
 
 Optimizations:
-- The memory accesses of all dimension slices are continuous for the least amount of cache misses. This is done by
-reordering the loops for the thomas solver of y and z axes.
+- Each dimension swipe handles also dirichlet boundary conditions.
 */
 
 namespace biofvm {
@@ -36,17 +34,19 @@ namespace device {
 
 class diffusion_solver : opencl_solver
 {
-	cl::Buffer bx_, cx_, ex_;
-	cl::Buffer by_, cy_, ey_;
-	cl::Buffer bz_, cz_, ez_;
+	cl::Buffer bx_, cx_;
+	cl::Buffer by_, cy_;
+	cl::Buffer bz_, cz_;
 
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t> solve_slice_2d_x_,
-		solve_slice_2d_y_;
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
+					  index_t, index_t>
+		solve_slice_2d_x_, solve_slice_2d_y_;
 
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t> solve_slice_3d_x_,
-		solve_slice_3d_y_, solve_slice_3d_z_;
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
+					  index_t, index_t, index_t>
+		solve_slice_3d_x_, solve_slice_3d_y_, solve_slice_3d_z_;
 
-	void precompute_values(cl::Buffer& b, cl::Buffer& c, cl::Buffer& e, index_t shape, index_t dims, index_t n,
+	void precompute_values(cl::Buffer& b, cl::Buffer& c, index_t shape, index_t dims, index_t n,
 						   const microenvironment& m);
 
 

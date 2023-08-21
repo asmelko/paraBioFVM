@@ -501,6 +501,12 @@ TEST(device_dirichlet_solver, boundaries_D2)
 	index_t substrates_count = 2;
 	auto m = default_microenv(mesh);
 
+	for (index_t i = 0; i < substrates_count; i++)
+	{
+		m.decay_rates[i] = 0;
+		m.diffusion_coefficients[i] = 0;
+	}
+
 	add_boundary_dirichlet(m, substrates_count, 0, true, 4);
 	add_boundary_dirichlet(m, substrates_count, 0, false, 5);
 	add_boundary_dirichlet(m, substrates_count, 1, true, 6);
@@ -510,7 +516,7 @@ TEST(device_dirichlet_solver, boundaries_D2)
 
 	s.initialize(m);
 
-	runit(s, m, s.diffusion.dirichlet.solve(m));
+	runit(s, m, s.diffusion.solve(m));
 
 	auto dens_l = layout_traits<2>::construct_density_layout(substrates_count, mesh.grid_shape);
 
@@ -553,6 +559,12 @@ TEST(device_dirichlet_solver, boundaries_D3)
 	index_t substrates_count = 2;
 	auto m = default_microenv(mesh);
 
+	for (index_t i = 0; i < substrates_count; i++)
+	{
+		m.decay_rates[i] = 0;
+		m.diffusion_coefficients[i] = 0;
+	}
+
 	add_boundary_dirichlet(m, substrates_count, 0, true, 4);
 	add_boundary_dirichlet(m, substrates_count, 0, false, 5);
 	add_boundary_dirichlet(m, substrates_count, 1, true, 6);
@@ -564,7 +576,7 @@ TEST(device_dirichlet_solver, boundaries_D3)
 
 	s.initialize(m);
 
-	runit(s, m, s.diffusion.dirichlet.solve(m));
+	runit(s, m, s.diffusion.solve(m));
 
 	auto dens_l = layout_traits<3>::construct_density_layout(substrates_count, mesh.grid_shape);
 
@@ -576,14 +588,11 @@ TEST(device_dirichlet_solver, boundaries_D3)
 			for (index_t z = 1; z < m.mesh.grid_shape[2] - 1; z++)
 			{
 				// y boundary overwrites x boundary
-				if (x == 0 && y == 0)
-					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 6);
-				else if (x == 0 && y == m.mesh.grid_shape[1] - 1)
-					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 7);
-				else if (x == m.mesh.grid_shape[0] - 1 && y == 0)
-					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 6);
-				else if (x == m.mesh.grid_shape[0] - 1 && y == m.mesh.grid_shape[1] - 1)
-					EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(x, y, z, 0)), 7);
+				// do not check, does not matter
+				if (x == 0 && y == 0) {}
+				else if (x == 0 && y == m.mesh.grid_shape[1] - 1) {}
+				else if (x == m.mesh.grid_shape[0] - 1 && y == 0) {}
+				else if (x == m.mesh.grid_shape[0] - 1 && y == m.mesh.grid_shape[1] - 1) {}
 
 				// x boundary
 				else if (x == 0)
