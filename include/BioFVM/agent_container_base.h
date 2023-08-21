@@ -65,7 +65,7 @@ public:
 	{
 		data_.add();
 
-		agents_.emplace_back(std::make_unique<agent_t>(next_agent_id_++, data_, data_.agents_count - 1));
+		agents_.emplace_back(std::make_unique<other_agent_t>(next_agent_id_++, data_, data_.agents_count - 1));
 
 		if constexpr (std::is_same_v<other_agent_t, agent_t>)
 			return agents_.back().get();
@@ -93,7 +93,14 @@ public:
 
 	virtual agent* get_agent_at(index_t index) override { return get_at(index); }
 
-	agent_t* get_at(index_t index) { return agents_[index].get(); }
+	template <typename other_agent_t = agent_t>
+	other_agent_t* get_at(index_t index)
+	{
+		if constexpr (std::is_same_v<other_agent_t, agent_t>)
+			return agents_[index].get();
+		else
+			return dynamic_cast<other_agent_t*>(agents_[index].get());
+	}
 
 	const std::vector<std::unique_ptr<agent_t>>& agents() const { return agents_; }
 
