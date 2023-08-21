@@ -4,6 +4,10 @@
 #include <iostream>
 #include <type_traits>
 
+#ifndef BioFVM_OPENCL_SOURCES
+#define BioFVM_OPENCL_SOURCES ""
+#endif
+
 using namespace biofvm::solvers::device;
 
 bool is_nvidia(const cl::Context& c)
@@ -17,7 +21,7 @@ opencl_solver::opencl_solver(device_context& ctx, const std::string& file_name) 
 	{
 		std::ifstream kernel_fs;
 
-		kernel_fs.open(file_name);
+		kernel_fs.open(BioFVM_OPENCL_SOURCES + file_name);
 
 		if (!kernel_fs.is_open())
 			throw std::runtime_error("Could not open kernel file: " + file_name);

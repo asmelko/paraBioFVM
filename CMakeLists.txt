@@ -86,14 +86,7 @@ if (BUILD_FOR_DEVICE)
 
 	target_link_libraries(BioFVMCore PUBLIC OpenCL::OpenCL)
 
-	file(GLOB cl_files_src "src/solver/device/*.cl")
-	list(TRANSFORM cl_files_src REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/src/solver/device" "${CMAKE_CURRENT_BINARY_DIR}" OUTPUT_VARIABLE cl_files_build)
-
-	add_custom_target(CL_SOURCES
-		COMMAND ${CMAKE_COMMAND} -E copy ${cl_files_src} ${CMAKE_CURRENT_BINARY_DIR}
-		DEPENDS ${cl_files_src}) 
-
-	add_dependencies(BioFVMCore CL_SOURCES)
+	target_compile_definitions(BioFVMCore PUBLIC BioFVM_OPENCL_SOURCES="${CMAKE_CURRENT_SOURCE_DIR}/src/solver/device/")
 
 	if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 		# Target BioFVM_device
