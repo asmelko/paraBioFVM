@@ -16,6 +16,10 @@ kernel void solve_slice_2d_x(global real_t* restrict densities, global const rea
 							 index_t y_size)
 {
 	int id = get_global_id(0);
+
+	if (id >= y_size * substrates_count)
+		return;
+
 	index_t y = id / substrates_count;
 	index_t s = id % substrates_count;
 
@@ -55,6 +59,10 @@ kernel void solve_slice_3d_x(global real_t* restrict densities, global const rea
 							 index_t y_size, index_t z_size)
 {
 	int id = get_global_id(0);
+
+	if (id >= y_size * z_size * substrates_count)
+		return;
+
 	index_t z = id / (y_size * substrates_count);
 	index_t y = (id / substrates_count) % y_size;
 	index_t s = id % substrates_count;
@@ -97,6 +105,10 @@ kernel void solve_slice_2d_y(global real_t* restrict densities, global const rea
 							 index_t y_size)
 {
 	int id = get_global_id(0);
+
+	if (id >= x_size * substrates_count)
+		return;
+
 	index_t x = id / substrates_count;
 	index_t s = id % substrates_count;
 
@@ -136,6 +148,10 @@ kernel void solve_slice_3d_y(global real_t* restrict densities, global const rea
 							 index_t y_size, index_t z_size)
 {
 	int id = get_global_id(0);
+	
+	if (id >= x_size * z_size * substrates_count)
+		return;
+
 	index_t z = id / (x_size * substrates_count);
 	index_t x = (id / substrates_count) % x_size;
 	index_t s = id % substrates_count;
@@ -178,6 +194,10 @@ kernel void solve_slice_3d_z(global real_t* restrict densities, global const rea
 							 index_t y_size, index_t z_size)
 {
 	int id = get_global_id(0);
+
+	if (id >= x_size * y_size * substrates_count)
+		return;
+
 	index_t y = id / (x_size * substrates_count);
 	index_t x = (id / substrates_count) % x_size;
 	index_t s = id % substrates_count;

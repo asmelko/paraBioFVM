@@ -49,39 +49,47 @@ class cell_solver : opencl_solver, common_solver
 	cl::Buffer conflicts_, conflicts_wrk_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
-					  index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t>
+					  index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t,
+					  index_t>
 		clear_and_ballot_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
 					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t,
 					  real_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t,
+					  index_t,
 					  index_t>
 		ballot_and_sum_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
-					  index_t, index_t>
+					  index_t, index_t,
+					  index_t>
 		compute_densities_1d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
-					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t>
+					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t,
+					  index_t>
 		compute_fused_1d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
+					  index_t,
 					  index_t, index_t, index_t, index_t, index_t>
 		compute_densities_2d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
 					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t,
+					  index_t,
 					  index_t, index_t, index_t>
 		compute_fused_2d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
-					  index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t>
+					  index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t,
+					  index_t>
 		compute_densities_3d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
 					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t,
-					  index_t, index_t, index_t, index_t, index_t, index_t>
+					  index_t, index_t, index_t, index_t, index_t, index_t,
+					  index_t>
 		compute_fused_3d_;
 
 
