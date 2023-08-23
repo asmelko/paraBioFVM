@@ -47,7 +47,7 @@ endif()
 target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
 
 if (DOUBLE_PRECISION)
-	target_compile_definitions(BioFVMCore PUBLIC USE_DOUBLE)
+	target_compile_definitions(BioFVMCore PUBLIC USE_DOUBLES)
 endif()
 
 find_package(OpenMP)
