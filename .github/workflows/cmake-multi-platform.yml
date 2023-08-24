@@ -28,9 +28,6 @@ jobs:
         cpp_compiler: [clang++]
         device_build: [ON, OFF]
         double_precision: [ON, OFF]
-        exclude:
-          - os: macos-latest
-            cpp_compiler: clang++
 
     steps:
     - uses: actions/checkout@v3
