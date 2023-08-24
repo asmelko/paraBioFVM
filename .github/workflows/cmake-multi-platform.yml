@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [macos-latest]
         build_type: [Release]
-        cpp_compiler: [g++-13, clang++-16]
+        cpp_compiler: [clang++]
         device_build: [ON, OFF]
         double_precision: [ON, OFF]
         exclude:
