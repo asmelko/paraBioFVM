@@ -23,7 +23,7 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
         build_type: [Release]
         c_compiler: [gcc, clang]
         device_build: [ON, OFF]
@@ -41,6 +41,9 @@ jobs:
           - os: macos-latest
             cpp_compiler: g++
             c_compiler: gcc
+        exclude:
+          - os: macos-latest
+            c_compiler: clang
 
     steps:
     - uses: actions/checkout@v3
@@ -53,7 +56,7 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
         
     - name: Install macos dependencies
-      if : ${{ matrix.os == 'macos' }}
+      if : ${{ matrix.os == 'macos-latest' }}
       run : brew install gcc
 
     - name: Configure CMake
