@@ -38,7 +38,7 @@ jobs:
             c_compiler: gcc
         exclude:
           - os: windows-lates
-            cpp_compiler: g++
+            c_compiler: gcc
 
     steps:
     - uses: actions/checkout@v3
