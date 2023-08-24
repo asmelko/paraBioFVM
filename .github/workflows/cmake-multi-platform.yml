@@ -25,22 +25,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang]
+        cpp_compiler: [g++, clang++]
         device_build: [ON, OFF]
         double_precision: [ON, OFF]
-        include:
-          - os: macos-latest
-            cpp_compiler: clang++
-            c_compiler: clang
-          - os: ubuntu-latest
-            cpp_compiler: clang++
-            c_compiler: clang
-          - os: ubuntu-latest
-            cpp_compiler: g++
-            c_compiler: gcc
-          - os: macos-latest
-            cpp_compiler: g++
-            c_compiler: gcc
         exclude:
           - os: macos-latest
             c_compiler: clang
@@ -65,7 +52,6 @@ jobs:
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DBUILD_FOR_DEVICE=${{ matrix.device_build }}
         -DDOUBLE_PRECISION=${{ matrix.double_precision }}
