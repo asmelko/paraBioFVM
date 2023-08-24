@@ -23,7 +23,7 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [macos-latest]
         build_type: [Release]
         cpp_compiler: [g++, clang++]
         device_build: [ON, OFF]
@@ -44,7 +44,7 @@ jobs:
         
     - name: Install macos dependencies
       if : ${{ matrix.os == 'macos-latest' }}
-      run : brew install gcc-12 llvm
+      run : brew install gcc@12 llvm
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
