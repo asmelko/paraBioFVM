@@ -23,9 +23,11 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         build_type: [Release]
         c_compiler: [gcc, clang]
+        device_build: [ON, OFF]
+        double_precision: [ON, OFF]
         include:
           - os: macos-latest
             cpp_compiler: clang++
@@ -58,6 +60,8 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBUILD_FOR_DEVICE=${{ matrix.device_build }}
+        -DDOUBLE_PRECISION=${{ matrix.double_precision }}
         -S ${{ github.workspace }}
 
     - name: Build
