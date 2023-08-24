@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [macos-latest]
         build_type: [Release]
-        cpp_compiler: [g++, clang++]
+        cpp_compiler: [g++-12, clang++-16]
         device_build: [ON, OFF]
         double_precision: [ON, OFF]
         exclude:
@@ -44,14 +44,14 @@ jobs:
         
     - name: Install macos dependencies
       if : ${{ matrix.os == 'macos-latest' }}
-      run : brew install gcc@12 llvm
+      run : brew install llvm
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}-12
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DBUILD_FOR_DEVICE=${{ matrix.device_build }}
         -DDOUBLE_PRECISION=${{ matrix.double_precision }}
