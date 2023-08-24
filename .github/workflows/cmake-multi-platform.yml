@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        cpp_compiler: [g++, clang++, clang-cl]
+        cpp_compiler: [g++, clang++]
         include:
           - os: windows-latest
             cpp_compiler: clang-cl
@@ -36,6 +36,9 @@ jobs:
           - os: ubuntu-latest
             cpp_compiler: g++
             c_compiler: gcc
+        exclude:
+          - os: windows-lates
+            cpp_compiler: g++
 
     steps:
     - uses: actions/checkout@v3
