@@ -76,16 +76,21 @@ void dirichlet_solver::solve_2d(microenvironment& m)
 {
 	if (dirichlet_interior_voxels_count)
 		solve_interior_2d_(
-			cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(ROUND_UP(dirichlet_interior_voxels_count * m.substrates_count, 256)), cl::NDRange(256)),
+			cl::EnqueueArgs(ctx_.substrates_queue,
+							cl::NDRange(ROUND_UP(dirichlet_interior_voxels_count * m.substrates_count, 256)),
+							cl::NDRange(256)),
 			ctx_.diffusion_substrates, dirichlet_interior_voxels, dirichlet_interior_values,
-			dirichlet_interior_conditions, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1], dirichlet_interior_voxels_count);
+			dirichlet_interior_conditions, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1],
+			dirichlet_interior_voxels_count);
 }
 
 void dirichlet_solver::solve_3d(microenvironment& m)
 {
 	if (dirichlet_interior_voxels_count)
 		solve_interior_3d_(
-			cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(ROUND_UP(dirichlet_interior_voxels_count * m.substrates_count, 256)), cl::NDRange(256)),
+			cl::EnqueueArgs(ctx_.substrates_queue,
+							cl::NDRange(ROUND_UP(dirichlet_interior_voxels_count * m.substrates_count, 256)),
+							cl::NDRange(256)),
 			ctx_.diffusion_substrates, dirichlet_interior_voxels, dirichlet_interior_values,
 			dirichlet_interior_conditions, m.substrates_count, m.mesh.grid_shape[0], m.mesh.grid_shape[1],
 			m.mesh.grid_shape[2], dirichlet_interior_voxels_count);
