@@ -23,9 +23,9 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [macos-latest]
+        os: [windows-latest]
         build_type: [Release]
-        cpp_compiler: [g++-12]
+        cpp_compiler: [clang-cl.exe]
         device_build: [ON, OFF]
         double_precision: [ON, OFF]
 
