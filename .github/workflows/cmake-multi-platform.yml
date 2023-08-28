@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [windows-latest]
         build_type: [Release]
-        cpp_compiler: [cl]
+        cpp_compiler: [clang-cl]
         device_build: [ON, OFF]
         double_precision: [ON, OFF]
 
@@ -47,7 +47,7 @@ jobs:
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
-        cmake -A x64 -T clang-cl -B ${{ steps.strings.outputs.build-output-dir }}
+        cmake -G "Visual Studio 17 2022" -A x64 -T LLVM -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DBUILD_FOR_DEVICE=${{ matrix.device_build }}
