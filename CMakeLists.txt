@@ -64,9 +64,9 @@ if (BUILD_FOR_DEVICE)
 		GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
 		GIT_TAG        main
 	)
-	FetchContent_Populate(opencl_headers)
+	FetchContent_MakeAvailable(opencl_headers)
 
-	set(OPENCL_ICD_LOADER_HEADERS_DIR ${opencl_headers_SOURCE_DIR} CACHE PATH "Path to OpenCL Headers")
+	file(CREATE_LINK ${opencl_headers_SOURCE_DIR}/CL ${opencl_headers_SOURCE_DIR}/OpenCL SYMBOLIC)
 
 	FetchContent_Declare(
 		opencl_icd
@@ -74,9 +74,6 @@ if (BUILD_FOR_DEVICE)
 		GIT_TAG        main
 	)
 	FetchContent_MakeAvailable(opencl_icd)
-
-	set(OPENCL_CLHPP_HEADERS_DIR ${opencl_headers_SOURCE_DIR} CACHE PATH "OpenCL headers dir")
-	set(OPENCL_CLHPP_LOADER_DIR ${opencl_icd_BUILD_DIR} CACHE PATH "OpenCL library dir")
 
 	FetchContent_Declare(
 		opencl_hpp
