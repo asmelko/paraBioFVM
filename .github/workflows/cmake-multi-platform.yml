@@ -25,9 +25,9 @@ jobs:
       matrix:
         os: [windows-latest]
         build_type: [Release]
-        cpp_compiler: ["C:\\Program Files\\LLVM\\bin\\clang++.exe"]
-        device_build: [ON, OFF]
-        double_precision: [ON, OFF]
+        cpp_compiler: [clang++]
+        device_build: [OFF]
+        double_precision: [OFF]
 
     steps:
     - uses: actions/checkout@v3
@@ -48,6 +48,9 @@ jobs:
       with:
         version: latest
         platform: x64
+
+    - name: add to path
+      run: echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
