@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [windows-latest]
         build_type: [Release]
-        cpp_compiler: [clang-cl]
+        cpp_compiler: [clang]
         device_build: [ON, OFF]
         double_precision: [ON, OFF]
 
@@ -42,12 +42,17 @@ jobs:
     - name: Install macos dependencies
       if : ${{ matrix.os == 'macos-latest' }}
       run : brew install gcc@13
+          
+    - name: Add clang path to $PATH env
+      shell: bash
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: echo "PATH=$PATH:C:\msys64\mingw64\bin" >> $GITHUB_ENV
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
-        cmake -G "Visual Studio 17 2022" -A x64 -T LLVM -B ${{ steps.strings.outputs.build-output-dir }}
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DBUILD_FOR_DEVICE=${{ matrix.device_build }}
