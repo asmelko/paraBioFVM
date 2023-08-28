@@ -60,27 +60,27 @@ if (BUILD_FOR_DEVICE)
 	target_compile_definitions(BioFVMCore PUBLIC BioFVM_SOLVER_IMPL=1)
 
 	FetchContent_Declare(
-		opencl_hpp
-		GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-CLHPP.git
-		GIT_TAG        v2023.04.17
-	)
-	FetchContent_Populate(opencl_hpp)
-
-	FetchContent_Declare(
 		opencl_headers
 		GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
-		GIT_TAG        e049b16b5f157e2f28e7b5c301e71e1ccb3fe288
+		GIT_TAG        main
 	)
-	FetchContent_Populate(opencl_headers)
+	FetchContent_MakeAvailable(opencl_headers)
 
-	set(OPENCL_ICD_LOADER_HEADERS_DIR ${opencl_headers_SOURCE_DIR} CACHE PATH "Path to OpenCL Headers")
+	file(CREATE_LINK ${opencl_headers_SOURCE_DIR}/CL ${opencl_headers_SOURCE_DIR}/OpenCL SYMBOLIC)
 
 	FetchContent_Declare(
 		opencl_icd
 		GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
-		GIT_TAG        229410f86a8c8c9e0f86f195409e5481a2bae067
+		GIT_TAG        main
 	)
 	FetchContent_MakeAvailable(opencl_icd)
+
+	FetchContent_Declare(
+		opencl_hpp
+		GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-CLHPP.git
+		GIT_TAG        main
+	)
+	FetchContent_Populate(opencl_hpp)
 
 	target_include_directories(BioFVMCore PUBLIC ${opencl_hpp_SOURCE_DIR}/include)
 
