@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [windows-latest]
         build_type: [Release]
-        cpp_compiler: [C:\Program Files\LLVM\bin\clang++.exe]
+        cpp_compiler: ["C:\\Program Files\\LLVM\\bin\\clang++.exe"]
         device_build: [ON, OFF]
         double_precision: [ON, OFF]
 
