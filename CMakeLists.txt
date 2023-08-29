@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(BUILD_FOR_DEVICE "Build opencl device code" OFF)
+option(BUILD_FOR_DEVICE "Build opencl device code" ON)
 option(DOUBLE_PRECISION "Use double instead of float" OFF)
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -66,7 +66,9 @@ if (BUILD_FOR_DEVICE)
 	)
 	FetchContent_MakeAvailable(opencl_headers)
 
-	file(CREATE_LINK ${opencl_headers_SOURCE_DIR}/CL ${opencl_headers_SOURCE_DIR}/OpenCL SYMBOLIC)
+	if (${APPLE})
+		file(CREATE_LINK ${opencl_headers_SOURCE_DIR}/CL ${opencl_headers_SOURCE_DIR}/OpenCL SYMBOLIC)
+	endif()
 
 	FetchContent_Declare(
 		opencl_icd
