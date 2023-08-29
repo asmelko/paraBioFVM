@@ -12,6 +12,8 @@ diffusion_solver::diffusion_solver(device_context& ctx)
 	: opencl_solver(ctx, "diffusion_solver.cl"),
 	  solve_slice_2d_x_(this->program_, "solve_slice_2d_x"),
 	  solve_slice_2d_y_(this->program_, "solve_slice_2d_y"),
+	  solve_slice_2d_x_m_(this->program_, "solve_slice_2d_x_m"),
+	  solve_slice_2d_y_m_(this->program_, "solve_slice_2d_y_m"),
 	  solve_slice_3d_x_(this->program_, "solve_slice_3d_x"),
 	  solve_slice_3d_y_(this->program_, "solve_slice_3d_y"),
 	  solve_slice_3d_z_(this->program_, "solve_slice_3d_z"),
@@ -28,6 +30,10 @@ void diffusion_solver::initialize(microenvironment& m)
 		precompute_values(bz_, cz_, m.mesh.voxel_shape[2], m.mesh.dims, m.mesh.grid_shape[2], m);
 
 	dirichlet.initialize(m);
+
+	diffusion_coefficients_ = cl::Buffer(ctx_.context, m.diffusion_coefficients.get(),
+										 m.diffusion_coefficients.get() + m.substrates_count, true);
+	decay_rates_ = cl::Buffer(ctx_.context, m.decay_rates.get(), m.decay_rates.get() + m.substrates_count, true);
 }
 
 void diffusion_solver::precompute_values(cl::Buffer& b, cl::Buffer& c, index_t shape, index_t dims, index_t n,
@@ -48,6 +54,29 @@ void diffusion_solver::precompute_values(cl::Buffer& b, cl::Buffer& c, index_t s
 
 void diffusion_solver::solve_2d(microenvironment& m)
 {
+	/*dirichlet.solve_2d(m);
+
+	solve_slice_2d_x_m_(cl::EnqueueArgs(ctx_.substrates_queue,
+										cl::NDRange(m.mesh.grid_shape[1] * m.substrates_count * 32), cl::NDRange(32)),
+						ctx_.diffusion_substrates, diffusion_coefficients_, decay_rates_,
+						dirichlet.dirichlet_min_boundary_conditions[0], dirichlet.dirichlet_min_boundary_values[0],
+						dirichlet.dirichlet_max_boundary_conditions[0], dirichlet.dirichlet_max_boundary_values[0],
+						m.diffusion_time_step, m.mesh.voxel_shape[0], m.substrates_count, m.mesh.grid_shape[0],
+						m.mesh.grid_shape[1]);
+
+	dirichlet.solve_2d(m);
+
+	solve_slice_2d_y_m_(cl::EnqueueArgs(ctx_.substrates_queue,
+										cl::NDRange(m.mesh.grid_shape[0] * m.substrates_count * 32), cl::NDRange(32)),
+						ctx_.diffusion_substrates, diffusion_coefficients_, decay_rates_,
+						dirichlet.dirichlet_min_boundary_conditions[1], dirichlet.dirichlet_min_boundary_values[1],
+						dirichlet.dirichlet_max_boundary_conditions[1], dirichlet.dirichlet_max_boundary_values[1],
+						m.diffusion_time_step, m.mesh.voxel_shape[1], m.substrates_count, m.mesh.grid_shape[0],
+						m.mesh.grid_shape[1]);
+
+	dirichlet.solve_2d(m);*/
+
+	
 	dirichlet.solve_2d(m);
 
 	solve_slice_2d_x_(

@@ -38,9 +38,16 @@ class diffusion_solver : opencl_solver
 	cl::Buffer by_, cy_;
 	cl::Buffer bz_, cz_;
 
+	cl::Buffer decay_rates_, diffusion_coefficients_;
+
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
 					  index_t, index_t>
 		solve_slice_2d_x_, solve_slice_2d_y_;
+
+
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t,
+					  real_t, index_t, index_t, index_t>
+		solve_slice_2d_x_m_, solve_slice_2d_y_m_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
 					  index_t, index_t, index_t>
