@@ -138,6 +138,70 @@ kernel void solve_slice_2d_x_m(global real_t* restrict densities, global const r
 }
 
 
+kernel void solve_slice_2d_x_m2(global real_t* restrict densities, global const real_t* diffusion_coeffs,
+								global const real_t* decay_rates, constant bool* restrict dirichlet_conditions_min,
+								constant real_t* restrict dirichlet_values_min,
+								constant bool* restrict dirichlet_conditions_max,
+								constant real_t* restrict dirichlet_values_max, real_t time_step, real_t shape,
+								index_t substrates_count, index_t x_size, index_t y_size)
+{
+	int id = get_global_id(0);
+
+	if (id >= y_size * substrates_count)
+		return;
+
+	index_t y = id / substrates_count;
+	index_t s = id % substrates_count;
+
+	const double a = -time_step * diffusion_coeffs[s] / (shape * shape);
+	const double b0 = 1 + decay_rates[s] * time_step / 2 + time_step * diffusion_coeffs[s] / (shape * shape);
+	const double b = 1 + decay_rates[s] * time_step / 2 + 2 * time_step * diffusion_coeffs[s] / (shape * shape);
+	const double c = a;
+
+	const double bb0 = b0 / a;
+	const double bb = b / a;
+
+	if (dirichlet_conditions_min[s])
+		densities[(y * x_size) * substrates_count + s] = dirichlet_values_min[s];
+
+	densities[(y * x_size) * substrates_count + s] /= bb0;
+	double cp = 1 / bb0;
+
+	printf("y: %d x: %d cp: %f \n", (int)y, 0, cp);
+
+	for (index_t x = 1; x < x_size - 1; x++)
+	{
+		densities[(y * x_size + x) * substrates_count + s] = (densities[(y * x_size + x) * substrates_count + s]
+															  - densities[(y * x_size + x - 1) * substrates_count + s])
+															 / (bb - cp);
+
+		cp = 1 / (bb - cp);
+		printf("y: %d x: %d cp: %f \n", (int)y, (int)x, cp);
+	}
+
+	if (dirichlet_conditions_max[s])
+		densities[(y * x_size + x_size - 1) * substrates_count + s] = dirichlet_values_max[s];
+
+	densities[(y * x_size + x_size - 1) * substrates_count + s] =
+		((densities[(y * x_size + x_size - 1) * substrates_count + s]
+		  - densities[(y * x_size + x_size - 2) * substrates_count + s])
+		 / (bb0 - cp))
+		/ a;
+
+	for (index_t x = x_size - 2; x >= 1; x--)
+	{
+		densities[(y * x_size + x) * substrates_count + s] =
+			(densities[(y * x_size + x) * substrates_count + s]
+			 - cp * densities[(y * x_size + x + 1) * substrates_count + s])
+			/ a;
+
+		cp = (bb * cp - 1) / cp;
+		printf("y: %d x: %d cp: %f \n", (int)y, (int)x, cp);
+	}
+
+	densities[(y * x_size) * substrates_count + s] =
+		(densities[(y * x_size) * substrates_count + s] - cp * densities[(y * x_size + 1) * substrates_count + s]) / a;
+}
 
 kernel void solve_slice_2d_y_m(global real_t* restrict densities, global const real_t* diffusion_coeffs,
 							   global const real_t* decay_rates, constant bool* restrict dirichlet_conditions_min,
@@ -422,6 +486,49 @@ kernel void solve_slice_2d_y(global real_t* restrict densities, global const rea
 	for (index_t y = y_size - 2; y >= 0; y--)
 	{
 		tmp = (densities[(y * x_size + x) * substrates_count + s] - a * tmp) * shared[y * substrates_count + s];
+		densities[(y * x_size + x) * substrates_count + s] = tmp;
+	}
+}
+
+kernel void solve_slice_2d_y2(global float4* restrict densities, global const real_t* b, global const real_t* c,
+							  constant bool* restrict dirichlet_conditions_min,
+							  constant real_t* restrict dirichlet_values_min,
+							  constant bool* restrict dirichlet_conditions_max,
+							  constant real_t* restrict dirichlet_values_max, index_t substrates_count, index_t x_size,
+							  index_t y_size)
+{
+	int id = get_global_id(0);
+
+	if (id >= x_size * substrates_count)
+		return;
+
+	index_t x = id / substrates_count;
+	index_t s = id % substrates_count;
+
+	const real_t a = c[s];
+
+	// if (dirichlet_conditions_min[s])
+	//	densities[x * substrates_count + s] = dirichlet_values_min[s];
+
+	float4 tmp = densities[x * substrates_count + s];
+
+	for (index_t y = 1; y < y_size - 1; y++)
+	{
+		tmp = densities[(y * x_size + x) * substrates_count + s] - a * b[(y - 1) * substrates_count + s] * tmp;
+		densities[(y * x_size + x) * substrates_count + s] = tmp;
+	}
+
+	// if (dirichlet_conditions_max[s])
+	//	densities[((y_size - 1) * x_size + x) * substrates_count + s] = dirichlet_values_max[s];
+
+	tmp = (densities[((y_size - 1) * x_size + x) * substrates_count + s]
+		   - a * b[(y_size - 2) * substrates_count + s] * tmp)
+		  * b[(y_size - 1) * substrates_count + s];
+	densities[((y_size - 1) * x_size + x) * substrates_count + s] = tmp;
+
+	for (index_t y = y_size - 2; y >= 0; y--)
+	{
+		tmp = (densities[(y * x_size + x) * substrates_count + s] - a * tmp) * b[y * substrates_count + s];
 		densities[(y * x_size + x) * substrates_count + s] = tmp;
 	}
 }
