@@ -3,7 +3,7 @@
 #include <noarr/structures/extra/traverser.hpp>
 #include <noarr/structures/interop/bag.hpp>
 
-#include "../src/solver/device/solver.h"
+#include "../src/solver/device/OpenCL/solver.h"
 #include "agent_container.h"
 #include "microenvironment.h"
 #include "traits.h"

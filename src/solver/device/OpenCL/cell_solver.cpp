@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "../host/cell_solver.h"
+#include "solver/host/cell_solver.h"
 
 using namespace biofvm;
 using namespace solvers::device;

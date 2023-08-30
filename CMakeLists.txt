@@ -36,15 +36,11 @@ file(GLOB src_files "src/*")
 list(FILTER src_files EXCLUDE REGEX ".*main.*")
 file(GLOB common_solver_files "src/solver/*")
 file(GLOB host_solver_files "src/solver/host/*")
-file(GLOB device_solver_files "src/solver/device/*")
 
-if (BUILD_FOR_DEVICE)
-	add_library(BioFVMCore OBJECT ${src_files} ${common_solver_files} ${host_solver_files} ${device_solver_files})
-else()
-	add_library(BioFVMCore OBJECT ${src_files} ${common_solver_files} ${host_solver_files})
-endif()
+add_library(BioFVMCore ${src_files} ${common_solver_files} ${host_solver_files})
 
-target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include include/BioFVM)
+include_directories(include/BioFVM src)
+target_include_directories(BioFVMCore PUBLIC ${noarr_structures_SOURCE_DIR}/include)
 
 if (DOUBLE_PRECISION)
 	target_compile_definitions(BioFVMCore PUBLIC USE_DOUBLES)
@@ -56,63 +52,26 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 if (BUILD_FOR_DEVICE)
-
 	target_compile_definitions(BioFVMCore PUBLIC BioFVM_SOLVER_IMPL=1)
 
-	FetchContent_Declare(
-		opencl_headers
-		GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
-		GIT_TAG        main
-	)
-	FetchContent_MakeAvailable(opencl_headers)
+	add_subdirectory(src/solver/device/OpenCL)
 
-	if (${APPLE})
-		file(CREATE_LINK ${opencl_headers_SOURCE_DIR}/CL ${opencl_headers_SOURCE_DIR}/OpenCL SYMBOLIC)
-	endif()
-
-	FetchContent_Declare(
-		opencl_icd
-		GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
-		GIT_TAG        main
-	)
-	FetchContent_MakeAvailable(opencl_icd)
-
-	FetchContent_Declare(
-		opencl_hpp
-		GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-CLHPP.git
-		GIT_TAG        main
-	)
-	FetchContent_Populate(opencl_hpp)
-
-	target_include_directories(BioFVMCore PUBLIC ${opencl_hpp_SOURCE_DIR}/include)
-
-	target_link_libraries(BioFVMCore PUBLIC OpenCL::OpenCL)
-
-	target_compile_definitions(BioFVMCore PUBLIC BioFVM_OPENCL_SOURCES="${CMAKE_CURRENT_SOURCE_DIR}/src/solver/device/")
+	target_link_libraries(BioFVMCore PUBLIC OpenCL_device_solver)
 
 	if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 		# Target BioFVM_device
 		add_executable(BioFVM_device src/main_device.cpp)
 		target_link_libraries(BioFVM_device BioFVMCore)
 	endif()
-
 endif()
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-	
 	# Target unit_BioFVM
-	if (BUILD_FOR_DEVICE)
-		file(GLOB_RECURSE test_files "test/*")	
-		add_executable(unit_BioFVM ${test_files})
-	else()
-		file(GLOB_RECURSE test_files "test/*")
+	file(GLOB_RECURSE test_files "test/*")	
+	if (NOT BUILD_FOR_DEVICE)
 		list(FILTER test_files EXCLUDE REGEX ".*test_device.cpp")
-		add_executable(unit_BioFVM ${test_files})
 	endif()
-
-	# Target BioFVM
-	add_executable(BioFVM src/main.cpp)
-	target_link_libraries(BioFVM BioFVMCore)
+	add_executable(unit_BioFVM ${test_files})
 
 	target_link_libraries(unit_BioFVM PRIVATE
 		gtest_main gmock_main BioFVMCore)
@@ -123,6 +82,10 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	enable_testing()
 	include(GoogleTest)
 	gtest_discover_tests(unit_BioFVM)
+
+	# Target BioFVM
+	add_executable(BioFVM src/main.cpp)
+	target_link_libraries(BioFVM BioFVMCore)
 endif()
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -131,10 +94,8 @@ else()
 	set(all_targets BioFVMCore)
 endif()
 
-foreach(target ${all_targets})
-	if(MSVC)
-		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /bigobj>)
-	else()
-		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic>)
-	endif()
-endforeach()
+if(MSVC)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/W4 /bigobj>)
+else()
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic>)
+endif()

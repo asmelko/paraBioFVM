@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../host/../common_solver.h"
 #include "microenvironment.h"
 #include "opencl_solver.h"
+#include "solver/common_solver.h"
 
 /*
 Performs secretion and uptake of cells.

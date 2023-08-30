@@ -1,7 +1,7 @@
 #include "diffusion_solver.h"
 
-#include "../host/diffusion_solver.h"
 #include "microenvironment.h"
+#include "solver/host/diffusion_solver.h"
 
 using namespace biofvm;
 using namespace solvers::device;
