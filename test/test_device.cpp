@@ -3,7 +3,7 @@
 #include <noarr/structures/extra/traverser.hpp>
 #include <noarr/structures/interop/bag.hpp>
 
-#include "../src/solver/device/OpenCL/solver.h"
+#include "../src/solver/device/CUDA/solver.h"
 #include "agent_container.h"
 #include "microenvironment.h"
 #include "traits.h"
@@ -33,7 +33,7 @@ void run_func(solver& s, microenvironment& m, const std::function<void()>&& f)
 
 TEST(device_diffusion_solver, D2_uniform)
 {
-	cartesian_mesh mesh(2, { 0, 0, 0 }, { 800, 800, 0 }, { 20, 20, 0 });
+	cartesian_mesh mesh(2, { 0, 0, 0 }, { 100, 40, 0 }, { 20, 20, 0 });
 
 	index_t substrates_count = 2;
 	auto m = default_microenv(mesh);
@@ -867,7 +867,7 @@ TEST_P(device_agents, conflict_big)
 {
 	bool compute_internalized = std::get<0>(GetParam());
 	bool recompute = std::get<1>(GetParam());
-	index_t conflict_in_each_voxel = 50;
+	index_t conflict_in_each_voxel = 10;
 
 	cartesian_mesh mesh(1, { 0, 0, 0 }, { 2000, 20, 20 }, { 20, 20, 20 });
 

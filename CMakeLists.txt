@@ -54,14 +54,16 @@ endif()
 if (BUILD_FOR_DEVICE)
 	target_compile_definitions(BioFVMCore PUBLIC BioFVM_SOLVER_IMPL=1)
 
-	add_subdirectory(src/solver/device/OpenCL)
+	add_subdirectory(src/solver/device/CUDA)
+	
+	enable_language(CUDA)
 
-	target_link_libraries(BioFVMCore PUBLIC OpenCL_device_solver)
+	target_link_libraries(BioFVMCore PUBLIC CUDA_device_solver)
 
 	if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 		# Target BioFVM_device
 		add_executable(BioFVM_device src/main_device.cpp)
-		target_link_libraries(BioFVM_device BioFVMCore)
+		target_link_libraries(BioFVM_device BioFVMCore CUDA_device_solver)
 	endif()
 endif()
 

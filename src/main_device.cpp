@@ -1,7 +1,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "solver/device/OpenCL/solver.h"
+#include "solver/device/CUDA/solver.h"
 
 using namespace biofvm;
 
