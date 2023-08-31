@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 file(GLOB device_solver_files "*")
 
-add_library(OpenCL_device_solver OBJECT ${device_solver_files})
+add_library(device_solver OBJECT ${device_solver_files})
 
 FetchContent_Declare(
 	opencl_headers
@@ -29,8 +29,8 @@ FetchContent_Declare(
 )
 FetchContent_Populate(opencl_hpp)
 
-target_include_directories(OpenCL_device_solver PUBLIC ${opencl_hpp_SOURCE_DIR}/include)
+target_include_directories(device_solver PUBLIC ${opencl_hpp_SOURCE_DIR}/include)
 
-target_link_libraries(OpenCL_device_solver PUBLIC OpenCL::OpenCL)
+target_link_libraries(device_solver PUBLIC OpenCL::OpenCL)
 
-target_compile_definitions(OpenCL_device_solver PUBLIC BioFVM_OPENCL_SOURCES="${CMAKE_CURRENT_SOURCE_DIR}/")
+target_compile_definitions(device_solver PUBLIC BioFVM_OPENCL_SOURCES="${CMAKE_CURRENT_SOURCE_DIR}/")

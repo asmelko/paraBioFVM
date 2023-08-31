@@ -3,9 +3,9 @@
 #include <noarr/structures/extra/traverser.hpp>
 #include <noarr/structures/interop/bag.hpp>
 
-#include "../src/solver/device/CUDA/solver.h"
 #include "agent_container.h"
 #include "microenvironment.h"
+#include "solver.h"
 #include "traits.h"
 #include "utils.h"
 

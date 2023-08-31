@@ -10,6 +10,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BUILD_FOR_DEVICE "Build opencl device code" OFF)
 option(DOUBLE_PRECISION "Use double instead of float" OFF)
 
+set(DEVICE_IMPL "opencl" CACHE STRING
+  "Which device implementation to choose.")
+
+set_property(CACHE DEVICE_IMPL PROPERTY STRINGS opencl cuda)
+
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	# Fetch Googletest
 	include(FetchContent)
@@ -52,19 +57,24 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 if (BUILD_FOR_DEVICE)
-	target_compile_definitions(BioFVMCore PUBLIC BioFVM_SOLVER_IMPL=1)
-
-	add_subdirectory(src/solver/device/CUDA)
+	if (DEVICE_IMPL STREQUAL "opencl")
+		target_compile_definitions(BioFVMCore PUBLIC BioFVM_SOLVER_IMPL_OPENCL)
+		add_subdirectory(src/solver/device/OpenCL)
+	else()
+		target_compile_definitions(BioFVMCore PUBLIC BioFVM_SOLVER_IMPL_CUDA)
+		add_subdirectory(src/solver/device/CUDA)
+		enable_language(CUDA)
+	endif()
 	
-	enable_language(CUDA)
-
-	target_link_libraries(BioFVMCore PUBLIC CUDA_device_solver)
+	target_link_libraries(BioFVMCore PUBLIC device_solver)
 
 	if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 		# Target BioFVM_device
 		add_executable(BioFVM_device src/main_device.cpp)
-		target_link_libraries(BioFVM_device BioFVMCore CUDA_device_solver)
+		target_link_libraries(BioFVM_device BioFVMCore device_solver)
 	endif()
+else()
+	target_compile_definitions(BioFVMCore PUBLIC BioFVM_SOLVER_IMPL_HOST)
 endif()
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)

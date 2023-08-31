@@ -7,10 +7,10 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 file(GLOB device_solver_files "*")
 
-add_library(CUDA_device_solver ${device_solver_files})
+add_library(device_solver ${device_solver_files})
 
-target_include_directories(CUDA_device_solver PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_include_directories(device_solver PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
-set_target_properties(CUDA_device_solver PROPERTIES CUDA_ARCHITECTURES "86")
+set_target_properties(device_solver PROPERTIES CUDA_ARCHITECTURES native)
 
 set(DEVICE_INCLUDE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
