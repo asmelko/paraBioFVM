@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../../common_solver.h"
 #include "cuda_solver.h"
-#include "solver/common_solver.h"
 
 /*
 Performs secretion and uptake of cells.

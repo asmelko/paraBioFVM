@@ -14,7 +14,7 @@ using cell_solver = solvers::host::cell_solver;
 #endif
 
 #if BioFVM_SOLVER_IMPL == BioFVM_DEVICE_SOLVER
-	#include "../../src/solver/device/solver.h"
+	#include "../../src/solver/device/CUDA/solver.h"
 
 namespace biofvm {
 using solver = solvers::device::solver;

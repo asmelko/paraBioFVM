@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../../host/gradient_solver.h"
 #include "cell_solver.h"
 #include "device_context.h"
 #include "diffusion_solver.h"
-#include "solver/host/gradient_solver.h"
 
 namespace biofvm {
 namespace solvers {

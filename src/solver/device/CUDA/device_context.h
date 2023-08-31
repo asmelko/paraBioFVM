@@ -2,8 +2,8 @@
 
 #include <cuda_runtime.h>
 
+#include "../../common_solver.h"
 #include "microenvironment.h"
-#include "solver/common_solver.h"
 
 namespace biofvm {
 namespace solvers {
