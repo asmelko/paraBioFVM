@@ -3,8 +3,8 @@
 #include <atomic>
 #include <memory>
 
+#include "../../../include/BioFVM/agent_data.h"
 #include "../common_solver.h"
-#include "agent_data.h"
 
 /*
 Performs secretion and uptake of cells.

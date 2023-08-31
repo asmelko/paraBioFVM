@@ -1,6 +1,6 @@
 #pragma once
 
-#include "microenvironment.h"
+#include "../../../include/BioFVM/microenvironment.h"
 
 /*
 This solver applies Dirichlet boundary conditions to the microenvironment.

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "microenvironment.h"
+#include "../../../include/BioFVM/microenvironment.h"
 
 namespace biofvm {
 namespace solvers {
