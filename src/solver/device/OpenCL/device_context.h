@@ -5,8 +5,8 @@
 
 #include <CL/opencl.hpp>
 
-#include "microenvironment.h"
-#include "solver/common_solver.h"
+#include "../../../../include/BioFVM/microenvironment.h"
+#include "../../common_solver.h"
 
 namespace biofvm {
 namespace solvers {
