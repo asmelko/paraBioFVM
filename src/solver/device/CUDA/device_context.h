@@ -2,7 +2,7 @@
 
 #include <cuda_runtime.h>
 
-#include "../../../include/BioFVM/microenvironment.h"
+#include "../../../../include/BioFVM/microenvironment.h"
 #include "../../common_solver.h"
 
 namespace biofvm {
