@@ -18,7 +18,9 @@ device_context::~device_context()
 
 void device_context::initialize(microenvironment& m)
 {
-	cudaMalloc(&diffusion_substrates, m.mesh.voxel_count() * m.substrates_count * sizeof(real_t));
+	CUCH(cudaMalloc(&diffusion_substrates, m.mesh.voxel_count() * m.substrates_count * sizeof(real_t)));
+
+	CUCH(cudaGetDeviceProperties(&device_properties, 0));
 
 	capacity = 0;
 }

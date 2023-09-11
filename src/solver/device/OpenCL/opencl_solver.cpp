@@ -30,7 +30,7 @@ opencl_solver::opencl_solver(device_context& ctx, const std::string& file_name) 
 
 		program_ = cl::Program(ctx_.context, kernel_code, false);
 
-		std::string build_parameters = "-cl-std=CL2.0 -w";
+		std::string build_parameters = "-cl-std=CL2.0 -w -cl-mad-enable";
 
 		if (is_nvidia(ctx_.context))
 			build_parameters += " -DNVIDIA";

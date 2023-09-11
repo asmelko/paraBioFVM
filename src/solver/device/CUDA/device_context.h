@@ -26,6 +26,8 @@ private:
 	void resize(std::size_t new_capacity, microenvironment& m);
 
 public:
+	cudaDeviceProp device_properties;
+
 	cudaStream_t substrates_queue;
 	cudaStream_t cell_data_queue;
 

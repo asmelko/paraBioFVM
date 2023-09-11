@@ -56,6 +56,12 @@ public:
 								  std::unique_ptr<real_t[]>& e, index_t shape, index_t dims, index_t n,
 								  const microenvironment& m, index_t copies);
 
+	static index_t precompute_values_modified_thomas(std::unique_ptr<real_t[]>& a, std::unique_ptr<real_t[]>& r_fwd,
+													 std::unique_ptr<real_t[]>& c_fwd, std::unique_ptr<real_t[]>& a_bck,
+													 std::unique_ptr<real_t[]>& c_bck, std::unique_ptr<real_t[]>& c_rdc,
+													 std::unique_ptr<real_t[]>& r_rdc, index_t shape, index_t dims,
+													 index_t n, index_t block_size, const microenvironment& m);
+
 	void initialize(microenvironment& m, dirichlet_solver& dirichlet);
 	void initialize(microenvironment& m);
 	void initialize(microenvironment& m, index_t substrate_factor);

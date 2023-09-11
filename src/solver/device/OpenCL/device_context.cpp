@@ -35,7 +35,11 @@ device_context::device_context(bool print_device_info)
 	for (std::size_t i = 0; i < devices.size(); i++)
 		std::cout << "ID: " << i << ", Device: " << devices[i].getInfo<CL_DEVICE_NAME>() << std::endl;
 
-	std::cout << "Selected device: " << context.getInfo<CL_CONTEXT_DEVICES>()[0].getInfo<CL_DEVICE_NAME>() << std::endl;
+	std::cout << "Selected device: " << context.getInfo<CL_CONTEXT_DEVICES>()[0].getInfo<CL_DEVICE_NAME>() << " with "
+			  << context.getInfo<CL_CONTEXT_DEVICES>()[0].getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() << "B of local memory"
+			  << std::endl;
+
+	local_mem_limit = context.getInfo<CL_CONTEXT_DEVICES>()[0].getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
 }
 
 void device_context::initialize(microenvironment& m)

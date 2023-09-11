@@ -26,6 +26,10 @@ d_i'' == (d_i' - c_i*d_(i+1)'')*b_i'                          n >  i >= 1
 
 Optimizations:
 - Each dimension swipe handles also dirichlet boundary conditions.
+- For small 2D problems, the whole swipes are put into shared memory.
+- For large 2D problems, the swipes are divided into blocks, which are computed independently according to the Modified
+Thomas Algorithm (all constants precomputed) [PaScaL_TDMA: A library of parallel and scalable solvers for massive
+tridiagonal systems].
 */
 
 namespace biofvm {
@@ -38,17 +42,36 @@ class diffusion_solver : opencl_solver
 	cl::Buffer by_, cy_;
 	cl::Buffer bz_, cz_;
 
+	cl::Buffer a_def_x_, r_fwd_x_, c_fwd_x_, a_bck_x_, c_bck_x_, c_rdc_x_, r_rdc_x_;
+	cl::Buffer a_def_y_, r_fwd_y_, c_fwd_y_, a_bck_y_, c_bck_y_, c_rdc_y_, r_rdc_y_;
+	cl::Buffer a_def_z_, r_fwd_z_, c_fwd_z_, a_bck_z_, c_bck_z_, c_rdc_z_, r_rdc_z_;
+
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
 					  index_t, index_t>
 		solve_slice_2d_x_, solve_slice_2d_y_;
+
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
+					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t>
+		solve_slice_2d_x_block_, solve_slice_2d_y_block_;
+
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
+					  index_t, index_t, index_t>
+		solve_slice_2d_x_shared_, solve_slice_2d_y_shared_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
 					  index_t, index_t, index_t>
 		solve_slice_3d_x_, solve_slice_3d_y_, solve_slice_3d_z_;
 
+	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
+					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t, index_t>
+		solve_slice_3d_x_block_, solve_slice_3d_y_block_, solve_slice_3d_z_block_;
+
 	void precompute_values(cl::Buffer& b, cl::Buffer& c, index_t shape, index_t dims, index_t n,
 						   const microenvironment& m);
 
+	void precompute_values_modified_thomas(cl::Buffer& a, cl::Buffer& r_fwd, cl::Buffer& c_fwd, cl::Buffer& a_bck,
+										   cl::Buffer& c_bck, cl::Buffer& c_rdc, cl::Buffer& r_rdc, index_t shape,
+										   index_t dims, index_t n, index_t block_size, const microenvironment& m);
 
 public:
 	diffusion_solver(device_context& ctx);

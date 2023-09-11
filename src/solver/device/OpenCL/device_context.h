@@ -22,6 +22,8 @@ public:
 	cl::CommandQueue substrates_queue;
 	cl::CommandQueue cell_data_queue;
 
+	index_t local_mem_limit;
+
 	cl::Buffer diffusion_substrates;
 
 	// required agent data:

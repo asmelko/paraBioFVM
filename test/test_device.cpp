@@ -31,9 +31,19 @@ void run_func(solver& s, microenvironment& m, const std::function<void()>&& f)
 
 #define runit(S, M, F) run_func(S, M, [&]() { F; })
 
-TEST(device_diffusion_solver, D2_uniform)
+
+class device_diffusion_solver_2d : public testing::TestWithParam<std::tuple<index_t, index_t>>
+{};
+
+INSTANTIATE_TEST_SUITE_P(sizes, device_diffusion_solver_2d,
+						 testing::Combine(testing::Values(200, 20000), testing::Values(200, 20000)));
+
+TEST_P(device_diffusion_solver_2d, D2_uniform)
 {
-	cartesian_mesh mesh(2, { 0, 0, 0 }, { 100, 40, 0 }, { 20, 20, 0 });
+	index_t x_size = std::get<0>(GetParam());
+	index_t y_size = std::get<1>(GetParam());
+
+	cartesian_mesh mesh(2, { 0, 0, 0 }, { x_size, y_size, 0 }, { 20, 20, 0 });
 
 	index_t substrates_count = 2;
 	auto m = default_microenv(mesh);

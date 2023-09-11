@@ -26,6 +26,10 @@ d_i'' == (d_i' - c_i*d_(i+1)'')*b_i'                          n >  i >= 1
 
 Optimizations:
 - Each dimension swipe handles also dirichlet boundary conditions.
+- For small 2D problems, the whole swipes are put into shared memory.
+- For large 2D problems, the swipes are divided into blocks, which are computed independently according to the Modified
+Thomas Algorithm (all constants precomputed) [PaScaL_TDMA: A library of parallel and scalable solvers for massive
+tridiagonal systems].
 */
 
 namespace biofvm {
@@ -38,8 +42,15 @@ class diffusion_solver : cuda_solver
 	real_t *by_, *cy_;
 	real_t *bz_, *cz_;
 
+	real_t *a_def_x_, *r_fwd_x_, *c_fwd_x_, *a_bck_x_, *c_bck_x_, *c_rdc_x_, *r_rdc_x_;
+	real_t *a_def_y_, *r_fwd_y_, *c_fwd_y_, *a_bck_y_, *c_bck_y_, *c_rdc_y_, *r_rdc_y_;
+	real_t *a_def_z_, *r_fwd_z_, *c_fwd_z_, *a_bck_z_, *c_bck_z_, *c_rdc_z_, *r_rdc_z_;
+
 	void precompute_values(real_t*& b, real_t*& c, index_t shape, index_t dims, index_t n, const microenvironment& m);
 
+	void precompute_values_mod(real_t*& a_def, real_t*& r_fwd, real_t*& c_fwd, real_t*& a_bck, real_t*& c_bck,
+							   real_t*& c_rdc, real_t*& r_rdc, index_t shape, index_t dims, index_t n,
+							   index_t block_size, const microenvironment& m);
 
 public:
 	diffusion_solver(device_context& ctx);

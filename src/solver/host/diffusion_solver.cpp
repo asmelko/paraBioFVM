@@ -141,6 +141,159 @@ void diffusion_solver::precompute_values(std::unique_ptr<real_t[]>& b, std::uniq
 	}
 }
 
+index_t diffusion_solver::precompute_values_modified_thomas(
+	std::unique_ptr<real_t[]>& a, std::unique_ptr<real_t[]>& r_fwd, std::unique_ptr<real_t[]>& c_fwd,
+	std::unique_ptr<real_t[]>& a_bck, std::unique_ptr<real_t[]>& c_bck, std::unique_ptr<real_t[]>& c_rdc,
+	std::unique_ptr<real_t[]>& r_rdc, index_t shape, index_t dims, index_t n, index_t block_size,
+	const microenvironment& m)
+{
+	auto b = std::make_unique<real_t[]>(n * m.substrates_count);
+	a = std::make_unique<real_t[]>(m.substrates_count);
+
+	auto layout = noarr::scalar<real_t>() ^ noarr::vector<'s'>() ^ noarr::vector<'i'>() ^ noarr::set_length<'i'>(n)
+				  ^ noarr::set_length<'s'>(m.substrates_count);
+
+	auto b_diag = noarr::make_bag(layout, b.get());
+
+	// compute a_i
+	for (index_t s = 0; s < m.substrates_count; s++)
+		a[s] = -m.diffusion_time_step * m.diffusion_coefficients[s] / (shape * shape);
+
+	// compute b_i
+	{
+		std::array<index_t, 2> indices = { 0, n - 1 };
+
+		for (index_t i : indices)
+			for (index_t s = 0; s < m.substrates_count; s++)
+				b_diag.at<'i', 's'>(i, s) = 1 + m.decay_rates[s] * m.diffusion_time_step / dims
+											+ m.diffusion_time_step * m.diffusion_coefficients[s] / (shape * shape);
+
+		for (index_t i = 1; i < n - 1; i++)
+			for (index_t s = 0; s < m.substrates_count; s++)
+				b_diag.at<'i', 's'>(i, s) = 1 + m.decay_rates[s] * m.diffusion_time_step / dims
+											+ 2 * m.diffusion_time_step * m.diffusion_coefficients[s] / (shape * shape);
+	}
+
+
+	a_bck = std::make_unique<real_t[]>(n * m.substrates_count);
+	c_fwd = std::make_unique<real_t[]>(n * m.substrates_count);
+	c_bck = std::make_unique<real_t[]>(n * m.substrates_count);
+	r_fwd = std::make_unique<real_t[]>(n * m.substrates_count);
+
+	auto a_fwd_diag = noarr::make_bag(layout, a_bck.get());
+	auto c_fwd_diag = noarr::make_bag(layout, c_fwd.get());
+	auto c_bck_diag = noarr::make_bag(layout, c_bck.get());
+	auto r_fwd_diag = noarr::make_bag(layout, r_fwd.get());
+
+	index_t blocks = (n + block_size - 1) / block_size;
+
+	{
+		for (index_t block_i = 0; block_i < blocks; block_i++)
+		{
+			const index_t block_begin = block_i * block_size;
+			const index_t block_end = std::min(n, block_i * block_size + block_size);
+
+			for (index_t idx = block_begin; idx < block_end; idx++)
+			{
+				if (idx - block_begin < 2)
+				{
+					for (index_t s = 0; s < m.substrates_count; s++)
+					{
+						a_fwd_diag.at<'i', 's'>(idx, s) = a[s] / b_diag.at<'i', 's'>(idx, s);
+						c_fwd_diag.at<'i', 's'>(idx, s) = a[s] / b_diag.at<'i', 's'>(idx, s);
+						r_fwd_diag.at<'i', 's'>(idx, s) = 1 / b_diag.at<'i', 's'>(idx, s);
+					}
+				}
+				else
+				{
+					for (index_t s = 0; s < m.substrates_count; s++)
+					{
+						r_fwd_diag.at<'i', 's'>(idx, s) =
+							1 / (b_diag.at<'i', 's'>(idx, s) - a[s] * c_fwd_diag.at<'i', 's'>(idx - 1, s));
+						c_fwd_diag.at<'i', 's'>(idx, s) = a[s] * r_fwd_diag.at<'i', 's'>(idx, s);
+						a_fwd_diag.at<'i', 's'>(idx, s) =
+							-a[s] * a_fwd_diag.at<'i', 's'>(idx - 1, s) * r_fwd_diag.at<'i', 's'>(idx, s);
+					}
+				}
+			}
+
+			if (block_end - block_begin <= 2)
+				continue;
+
+			for (index_t idx = block_end - 1; idx >= block_begin; idx--)
+			{
+				if (idx >= block_end - 2)
+				{
+					for (index_t s = 0; s < m.substrates_count; s++)
+						c_bck_diag.at<'i', 's'>(idx, s) = c_fwd_diag.at<'i', 's'>(idx, s);
+				}
+				else if (idx != block_begin)
+				{
+					for (index_t s = 0; s < m.substrates_count; s++)
+					{
+						a_fwd_diag.at<'i', 's'>(idx, s) =
+							a_fwd_diag.at<'i', 's'>(idx, s)
+							- c_fwd_diag.at<'i', 's'>(idx, s) * a_fwd_diag.at<'i', 's'>(idx + 1, s);
+						c_bck_diag.at<'i', 's'>(idx, s) =
+							-c_fwd_diag.at<'i', 's'>(idx, s) * c_bck_diag.at<'i', 's'>(idx + 1, s);
+					}
+				}
+				else
+				{
+					for (index_t s = 0; s < m.substrates_count; s++)
+					{
+						real_t r = 1 / (1 - a_fwd_diag.at<'i', 's'>(idx + 1, s) * c_fwd_diag.at<'i', 's'>(idx, s));
+						c_bck_diag.at<'i', 's'>(idx, s) =
+							-r * c_fwd_diag.at<'i', 's'>(idx, s) * c_bck_diag.at<'i', 's'>(idx + 1, s);
+						a_fwd_diag.at<'i', 's'>(idx, s) *= r;
+					}
+				}
+			}
+		}
+	}
+
+	r_rdc = std::make_unique<real_t[]>(blocks * 2 * m.substrates_count);
+	c_rdc = std::make_unique<real_t[]>(blocks * 2 * m.substrates_count);
+
+	auto r_rdc_diag = noarr::make_bag(layout, r_rdc.get());
+	auto c_rdc_diag = noarr::make_bag(layout, c_rdc.get());
+
+	{
+		auto a_rdc = std::make_unique<real_t[]>(blocks * 2 * m.substrates_count);
+		auto a_rdc_diag = noarr::make_bag(layout, a_rdc.get());
+
+		for (index_t block_i = 0; block_i < blocks; block_i++)
+		{
+			index_t idx = block_i * block_size;
+			for (index_t s = 0; s < m.substrates_count; s++)
+			{
+				a_rdc_diag.at<'i', 's'>(block_i * 2, s) = a_fwd_diag.at<'i', 's'>(idx, s);
+				c_rdc_diag.at<'i', 's'>(block_i * 2, s) = c_bck_diag.at<'i', 's'>(idx, s);
+
+				if (idx + block_size - 1 < n)
+				{
+					a_rdc_diag.at<'i', 's'>(block_i * 2 + 1, s) = a_fwd_diag.at<'i', 's'>(idx + block_size - 1, s);
+					c_rdc_diag.at<'i', 's'>(block_i * 2 + 1, s) = c_bck_diag.at<'i', 's'>(idx + block_size - 1, s);
+				}
+			}
+		}
+
+		int skip = n - ((blocks - 1) * block_size) == 1 ? 1 : 0;
+
+		for (index_t i = 1; i < blocks * 2 - skip; i++)
+		{
+			for (index_t s = 0; s < m.substrates_count; s++)
+			{
+				r_rdc_diag.at<'i', 's'>(i, s) =
+					1 / (1 - a_rdc_diag.at<'i', 's'>(i, s) * c_rdc_diag.at<'i', 's'>(i - 1, s));
+				c_rdc_diag.at<'i', 's'>(i, s) *= r_rdc_diag.at<'i', 's'>(i, s);
+			}
+		}
+	}
+
+	return blocks;
+}
+
 template <char swipe_dim, typename density_layout_t>
 void solve_slice(real_t* __restrict__ densities, const real_t* __restrict__ b, const real_t* __restrict__ c,
 				 const real_t* __restrict__ e, const density_layout_t dens_l)
