@@ -53,6 +53,38 @@ microenvironment biorobots_microenv(cartesian_mesh mesh)
 	return m;
 }
 
+microenvironment interactions_microenv(cartesian_mesh mesh)
+{
+	real_t diffusion_diffusion_time_step = 0.01;
+	index_t substrates_count = 5;
+
+	auto diff_coefs = std::make_unique<real_t[]>(substrates_count);
+	diff_coefs[0] = 100000;
+	diff_coefs[1] = 100;
+	diff_coefs[2] = 1000;
+	diff_coefs[3] = 1000;
+	diff_coefs[4] = 1000;
+	auto decay_rates = std::make_unique<real_t[]>(substrates_count);
+	decay_rates[0] = 0.1;
+	decay_rates[1] = 0.1;
+	decay_rates[2] = 0.1;
+	decay_rates[3] = 0.01;
+	decay_rates[4] = 0.1;
+
+	auto initial_conds = std::make_unique<real_t[]>(substrates_count);
+	initial_conds[0] = 1;
+	initial_conds[1] = 0;
+	initial_conds[2] = 0;
+	initial_conds[3] = 0;
+	initial_conds[4] = 0;
+
+	microenvironment m(mesh, substrates_count, diffusion_diffusion_time_step, initial_conds.get());
+	m.diffusion_coefficients = std::move(diff_coefs);
+	m.decay_rates = std::move(decay_rates);
+
+	return m;
+}
+
 void add_dirichlet_at(microenvironment& m, index_t substrates_count, const std::vector<point_t<index_t, 3>>& indices,
 					  const std::vector<real_t>& values)
 {

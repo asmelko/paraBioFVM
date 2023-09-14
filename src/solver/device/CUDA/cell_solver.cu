@@ -378,7 +378,7 @@ void run_clear_and_ballot(const real_t* cell_positions, index_t* ballots, real_t
 						  index_t dims, cudaStream_t& stream)
 {
 	int block_size = 256;
-	int blocks = (n + block_size - 1) / block_size;
+	int blocks = (n * substrates_count + block_size - 1) / block_size;
 
 	clear_and_ballot<<<blocks, block_size, 0, stream>>>(
 		cell_positions, ballots, reduced_numerators, reduced_denominators, reduced_factors, conflicts, conflicts_wrk, n,
