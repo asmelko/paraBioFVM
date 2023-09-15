@@ -291,15 +291,3 @@ void cell_solver::modify_kernel_3d(microenvironment& m, cl::Kernel fused_kernel,
 	dens_kernel.setArg(3, reduced_factors_);
 	dens_kernel.setArg(4, ctx_.positions);
 }
-
-void cell_solver::set_kernel_args(microenvironment& m, bool update)
-{
-	if (m.mesh.dims == 2)
-	{
-		prepare_kernel_2d(m, compute_fused_2d_.getKernel(), compute_densities_2d_.getKernel());
-	}
-	else if (m.mesh.dims == 3)
-	{
-		prepare_kernel_3d(m, compute_fused_3d_.getKernel(), compute_densities_3d_.getKernel());
-	}
-}
