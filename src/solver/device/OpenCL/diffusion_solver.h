@@ -44,7 +44,6 @@ class diffusion_solver : opencl_solver
 
 	cl::Buffer a_def_x_, r_fwd_x_, c_fwd_x_, a_bck_x_, c_bck_x_, c_rdc_x_, r_rdc_x_;
 	cl::Buffer a_def_y_, r_fwd_y_, c_fwd_y_, a_bck_y_, c_bck_y_, c_rdc_y_, r_rdc_y_;
-	cl::Buffer a_def_z_, r_fwd_z_, c_fwd_z_, a_bck_z_, c_bck_z_, c_rdc_z_, r_rdc_z_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t,
 					  index_t, index_t>
@@ -62,9 +61,8 @@ class diffusion_solver : opencl_solver
 					  index_t, index_t, index_t>
 		solve_slice_3d_x_, solve_slice_3d_y_, solve_slice_3d_z_;
 
-	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
-					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, index_t, index_t, index_t, index_t, index_t>
-		solve_slice_3d_x_block_, solve_slice_3d_y_block_, solve_slice_3d_z_block_;
+	bool x_shared_optim_, y_shared_optim_;
+	cl::NDRange x_global_, x_local_, y_global_, y_local_, z_global_, z_local_;
 
 	void precompute_values(cl::Buffer& b, cl::Buffer& c, index_t shape, index_t dims, index_t n,
 						   const microenvironment& m);
@@ -72,6 +70,10 @@ class diffusion_solver : opencl_solver
 	void precompute_values_modified_thomas(cl::Buffer& a, cl::Buffer& r_fwd, cl::Buffer& c_fwd, cl::Buffer& a_bck,
 										   cl::Buffer& c_bck, cl::Buffer& c_rdc, cl::Buffer& r_rdc, index_t shape,
 										   index_t dims, index_t n, index_t block_size, const microenvironment& m);
+
+	void prepare_2d_kernels(microenvironment& m);
+	void prepare_3d_kernel(microenvironment& m, cl::Buffer& b, cl::Buffer& c, cl::Kernel kernel, cl::NDRange& global,
+						   cl::NDRange& local, index_t dim);
 
 public:
 	diffusion_solver(device_context& ctx);
