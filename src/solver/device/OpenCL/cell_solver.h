@@ -91,6 +91,12 @@ class cell_solver : opencl_solver, common_solver
 	void simulate_2d(microenvironment& m);
 	void simulate_3d(microenvironment& m);
 
+	void prepare_kernel_2d(microenvironment& m, cl::Kernel fused_kernel, cl::Kernel dens_kernel);
+	void prepare_kernel_3d(microenvironment& m, cl::Kernel fused_kernel, cl::Kernel dens_kernel);
+
+	void modify_kernel_2d(microenvironment& m, cl::Kernel fused_kernel, cl::Kernel dens_kernel);
+	void modify_kernel_3d(microenvironment& m, cl::Kernel fused_kernel, cl::Kernel dens_kernel);
+
 public:
 	cell_solver(device_context& ctx);
 

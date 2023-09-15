@@ -34,20 +34,13 @@ void cell_solver::simulate_2d(microenvironment& m)
 
 	if (compute_internalized_substrates_)
 	{
-		compute_fused_2d_(cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(agents_count * m.substrates_count)),
-						  ctx_.internalized_substrates, ctx_.diffusion_substrates, numerators_, denominators_, factors_,
-						  reduced_numerators_, reduced_denominators_, reduced_factors_, ctx_.positions, ballots_,
-						  conflicts_, conflicts_wrk_, m.mesh.voxel_volume(), m.substrates_count,
-						  m.mesh.bounding_box_mins[0], m.mesh.bounding_box_mins[1], m.mesh.voxel_shape[0],
-						  m.mesh.voxel_shape[1], m.mesh.grid_shape[0], m.mesh.grid_shape[1]);
+		ctx_.substrates_queue.enqueueNDRangeKernel(compute_fused_2d_.getKernel(), cl::NullRange,
+												   cl::NDRange(agents_count * m.substrates_count));
 	}
 	else
 	{
-		compute_densities_2d_(cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(agents_count * m.substrates_count)),
-							  ctx_.diffusion_substrates, reduced_numerators_, reduced_denominators_, reduced_factors_,
-							  ctx_.positions, ballots_, m.mesh.voxel_volume(), m.substrates_count,
-							  m.mesh.bounding_box_mins[0], m.mesh.bounding_box_mins[1], m.mesh.voxel_shape[0],
-							  m.mesh.voxel_shape[1], m.mesh.grid_shape[0], m.mesh.grid_shape[1]);
+		ctx_.substrates_queue.enqueueNDRangeKernel(compute_densities_2d_.getKernel(), cl::NullRange,
+												   cl::NDRange(agents_count * m.substrates_count));
 	}
 }
 
@@ -57,22 +50,13 @@ void cell_solver::simulate_3d(microenvironment& m)
 
 	if (compute_internalized_substrates_)
 	{
-		compute_fused_3d_(cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(agents_count * m.substrates_count)),
-						  ctx_.internalized_substrates, ctx_.diffusion_substrates, numerators_, denominators_, factors_,
-						  reduced_numerators_, reduced_denominators_, reduced_factors_, ctx_.positions, ballots_,
-						  conflicts_, conflicts_wrk_, m.mesh.voxel_volume(), m.substrates_count,
-						  m.mesh.bounding_box_mins[0], m.mesh.bounding_box_mins[1], m.mesh.bounding_box_mins[2],
-						  m.mesh.voxel_shape[0], m.mesh.voxel_shape[1], m.mesh.voxel_shape[2], m.mesh.grid_shape[0],
-						  m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
+		ctx_.substrates_queue.enqueueNDRangeKernel(compute_fused_3d_.getKernel(), cl::NullRange,
+												   cl::NDRange(agents_count * m.substrates_count));
 	}
 	else
 	{
-		compute_densities_3d_(cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(agents_count * m.substrates_count)),
-							  ctx_.diffusion_substrates, reduced_numerators_, reduced_denominators_, reduced_factors_,
-							  ctx_.positions, ballots_, m.mesh.voxel_volume(), m.substrates_count,
-							  m.mesh.bounding_box_mins[0], m.mesh.bounding_box_mins[1], m.mesh.bounding_box_mins[2],
-							  m.mesh.voxel_shape[0], m.mesh.voxel_shape[1], m.mesh.voxel_shape[2], m.mesh.grid_shape[0],
-							  m.mesh.grid_shape[1], m.mesh.grid_shape[2]);
+		ctx_.substrates_queue.enqueueNDRangeKernel(compute_densities_3d_.getKernel(), cl::NullRange,
+												   cl::NDRange(agents_count * m.substrates_count));
 	}
 }
 
@@ -85,6 +69,15 @@ void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recomp
 	if (recompute)
 	{
 		resize(m);
+
+		if (m.mesh.dims == 2)
+		{
+			modify_kernel_2d(m, compute_fused_2d_.getKernel(), compute_densities_2d_.getKernel());
+		}
+		else if (m.mesh.dims == 3)
+		{
+			modify_kernel_2d(m, compute_fused_3d_.getKernel(), compute_densities_3d_.getKernel());
+		}
 
 		clear_and_ballot_(cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(agents_count * m.substrates_count)),
 						  ctx_.positions, ballots_, reduced_numerators_, reduced_denominators_, reduced_factors_,
@@ -154,6 +147,15 @@ void cell_solver::initialize(microenvironment& m)
 	resize(m);
 
 	ballots_ = cl::Buffer(ctx_.context, CL_MEM_READ_WRITE, m.mesh.voxel_count() * sizeof(index_t));
+
+	if (m.mesh.dims == 2)
+	{
+		prepare_kernel_2d(m, compute_fused_2d_.getKernel(), compute_densities_2d_.getKernel());
+	}
+	else if (m.mesh.dims == 3)
+	{
+		prepare_kernel_3d(m, compute_fused_3d_.getKernel(), compute_densities_3d_.getKernel());
+	}
 }
 
 cell_solver::cell_solver(device_context& ctx)
@@ -167,3 +169,137 @@ cell_solver::cell_solver(device_context& ctx)
 	  compute_densities_3d_(this->program_, "compute_densities_3d"),
 	  compute_fused_3d_(this->program_, "compute_fused_3d")
 {}
+
+void cell_solver::prepare_kernel_2d(microenvironment& m, cl::Kernel fused_kernel, cl::Kernel dens_kernel)
+{
+	fused_kernel.setArg(0, ctx_.internalized_substrates);
+	fused_kernel.setArg(1, ctx_.diffusion_substrates);
+	fused_kernel.setArg(2, numerators_);
+	fused_kernel.setArg(3, denominators_);
+	fused_kernel.setArg(4, factors_);
+	fused_kernel.setArg(5, reduced_numerators_);
+	fused_kernel.setArg(6, reduced_denominators_);
+	fused_kernel.setArg(7, reduced_factors_);
+	fused_kernel.setArg(8, ctx_.positions);
+	fused_kernel.setArg(9, ballots_);
+	fused_kernel.setArg(10, conflicts_);
+	fused_kernel.setArg(11, conflicts_wrk_);
+	fused_kernel.setArg<real_t>(12, m.mesh.voxel_volume());
+	fused_kernel.setArg(13, m.substrates_count);
+	fused_kernel.setArg(14, m.mesh.bounding_box_mins[0]);
+	fused_kernel.setArg(15, m.mesh.bounding_box_mins[1]);
+	fused_kernel.setArg(16, m.mesh.voxel_shape[0]);
+	fused_kernel.setArg(17, m.mesh.voxel_shape[1]);
+	fused_kernel.setArg(18, m.mesh.grid_shape[0]);
+	fused_kernel.setArg(19, m.mesh.grid_shape[1]);
+
+	dens_kernel.setArg(0, ctx_.diffusion_substrates);
+	dens_kernel.setArg(1, reduced_numerators_);
+	dens_kernel.setArg(2, reduced_denominators_);
+	dens_kernel.setArg(3, reduced_factors_);
+	dens_kernel.setArg(4, ctx_.positions);
+	dens_kernel.setArg(5, ballots_);
+	dens_kernel.setArg<real_t>(6, m.mesh.voxel_volume());
+	dens_kernel.setArg(7, m.substrates_count);
+	dens_kernel.setArg(8, m.mesh.bounding_box_mins[0]);
+	dens_kernel.setArg(9, m.mesh.bounding_box_mins[1]);
+	dens_kernel.setArg(10, m.mesh.voxel_shape[0]);
+	dens_kernel.setArg(11, m.mesh.voxel_shape[1]);
+	dens_kernel.setArg(12, m.mesh.grid_shape[0]);
+	dens_kernel.setArg(13, m.mesh.grid_shape[1]);
+}
+
+void cell_solver::prepare_kernel_3d(microenvironment& m, cl::Kernel fused_kernel, cl::Kernel dens_kernel)
+{
+	fused_kernel.setArg(0, ctx_.internalized_substrates);
+	fused_kernel.setArg(1, ctx_.diffusion_substrates);
+	fused_kernel.setArg(2, numerators_);
+	fused_kernel.setArg(3, denominators_);
+	fused_kernel.setArg(4, factors_);
+	fused_kernel.setArg(5, reduced_numerators_);
+	fused_kernel.setArg(6, reduced_denominators_);
+	fused_kernel.setArg(7, reduced_factors_);
+	fused_kernel.setArg(8, ctx_.positions);
+	fused_kernel.setArg(9, ballots_);
+	fused_kernel.setArg(10, conflicts_);
+	fused_kernel.setArg(11, conflicts_wrk_);
+	fused_kernel.setArg<real_t>(12, m.mesh.voxel_volume());
+	fused_kernel.setArg(13, m.substrates_count);
+	fused_kernel.setArg(14, m.mesh.bounding_box_mins[0]);
+	fused_kernel.setArg(15, m.mesh.bounding_box_mins[1]);
+	fused_kernel.setArg(16, m.mesh.bounding_box_mins[2]);
+	fused_kernel.setArg(17, m.mesh.voxel_shape[0]);
+	fused_kernel.setArg(18, m.mesh.voxel_shape[1]);
+	fused_kernel.setArg(19, m.mesh.voxel_shape[2]);
+	fused_kernel.setArg(20, m.mesh.grid_shape[0]);
+	fused_kernel.setArg(21, m.mesh.grid_shape[1]);
+	fused_kernel.setArg(22, m.mesh.grid_shape[2]);
+
+	dens_kernel.setArg(0, ctx_.diffusion_substrates);
+	dens_kernel.setArg(1, reduced_numerators_);
+	dens_kernel.setArg(2, reduced_denominators_);
+	dens_kernel.setArg(3, reduced_factors_);
+	dens_kernel.setArg(4, ctx_.positions);
+	dens_kernel.setArg(5, ballots_);
+	dens_kernel.setArg<real_t>(6, m.mesh.voxel_volume());
+	dens_kernel.setArg(7, m.substrates_count);
+	dens_kernel.setArg(8, m.mesh.bounding_box_mins[0]);
+	dens_kernel.setArg(9, m.mesh.bounding_box_mins[1]);
+	dens_kernel.setArg(10, m.mesh.bounding_box_mins[2]);
+	dens_kernel.setArg(11, m.mesh.voxel_shape[0]);
+	dens_kernel.setArg(12, m.mesh.voxel_shape[1]);
+	dens_kernel.setArg(13, m.mesh.voxel_shape[2]);
+	dens_kernel.setArg(14, m.mesh.grid_shape[0]);
+	dens_kernel.setArg(15, m.mesh.grid_shape[1]);
+	dens_kernel.setArg(16, m.mesh.grid_shape[2]);
+}
+
+void cell_solver::modify_kernel_2d(microenvironment& m, cl::Kernel fused_kernel, cl::Kernel dens_kernel)
+{
+	fused_kernel.setArg(0, ctx_.internalized_substrates);
+	fused_kernel.setArg(2, numerators_);
+	fused_kernel.setArg(3, denominators_);
+	fused_kernel.setArg(4, factors_);
+	fused_kernel.setArg(5, reduced_numerators_);
+	fused_kernel.setArg(6, reduced_denominators_);
+	fused_kernel.setArg(7, reduced_factors_);
+	fused_kernel.setArg(8, ctx_.positions);
+	fused_kernel.setArg(10, conflicts_);
+	fused_kernel.setArg(11, conflicts_wrk_);
+
+	dens_kernel.setArg(1, reduced_numerators_);
+	dens_kernel.setArg(2, reduced_denominators_);
+	dens_kernel.setArg(3, reduced_factors_);
+	dens_kernel.setArg(4, ctx_.positions);
+}
+
+void cell_solver::modify_kernel_3d(microenvironment& m, cl::Kernel fused_kernel, cl::Kernel dens_kernel)
+{
+	fused_kernel.setArg(0, ctx_.internalized_substrates);
+	fused_kernel.setArg(2, numerators_);
+	fused_kernel.setArg(3, denominators_);
+	fused_kernel.setArg(4, factors_);
+	fused_kernel.setArg(5, reduced_numerators_);
+	fused_kernel.setArg(6, reduced_denominators_);
+	fused_kernel.setArg(7, reduced_factors_);
+	fused_kernel.setArg(8, ctx_.positions);
+	fused_kernel.setArg(10, conflicts_);
+	fused_kernel.setArg(11, conflicts_wrk_);
+
+	dens_kernel.setArg(1, reduced_numerators_);
+	dens_kernel.setArg(2, reduced_denominators_);
+	dens_kernel.setArg(3, reduced_factors_);
+	dens_kernel.setArg(4, ctx_.positions);
+}
+
+void cell_solver::set_kernel_args(microenvironment& m, bool update)
+{
+	if (m.mesh.dims == 2)
+	{
+		prepare_kernel_2d(m, compute_fused_2d_.getKernel(), compute_densities_2d_.getKernel());
+	}
+	else if (m.mesh.dims == 3)
+	{
+		prepare_kernel_3d(m, compute_fused_3d_.getKernel(), compute_densities_3d_.getKernel());
+	}
+}
