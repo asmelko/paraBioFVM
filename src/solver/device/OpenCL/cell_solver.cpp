@@ -89,7 +89,7 @@ void cell_solver::simulate_secretion_and_uptake(microenvironment& m, bool recomp
 		}
 		else if (m.mesh.dims == 3)
 		{
-			modify_kernel_2d(m);
+			modify_kernel_3d(m);
 		}
 
 		clear_and_ballot_(cl::EnqueueArgs(ctx_.substrates_queue, cl::NDRange(agents_count * m.substrates_count)),
