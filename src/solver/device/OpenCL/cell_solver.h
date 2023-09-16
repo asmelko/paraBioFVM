@@ -59,11 +59,12 @@ class cell_solver : opencl_solver, common_solver
 		ballot_and_sum_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,
-					  index_t, index_t>
+					  index_t, index_t, index_t>
 		compute_densities_1d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer,
-					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t>
+					  cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t, index_t, index_t,
+					  index_t>
 		compute_fused_1d_;
 
 	cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, cl::Buffer, real_t, index_t, index_t,

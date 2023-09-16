@@ -185,9 +185,13 @@ kernel void compute_densities_1d(global real_t* restrict substrate_densities, gl
 								 global const real_t* restrict denominator, global const real_t* restrict factor,
 								 global const real_t* restrict cell_positions, global const index_t* restrict ballots,
 								 real_t voxel_volume, index_t substrates_count, index_t x_min, index_t x_dt,
-								 index_t x_size)
+								 index_t x_size, index_t n)
 {
 	int id = get_global_id(0);
+
+	if (id >= n * substrates_count)
+		return;
+
 	index_t i = id / substrates_count;
 	index_t s = id % substrates_count;
 
@@ -210,9 +214,13 @@ kernel void compute_densities_2d(global real_t* restrict substrate_densities, gl
 								 global const real_t* restrict denominator, global const real_t* restrict factor,
 								 global const real_t* restrict cell_positions, global const index_t* restrict ballots,
 								 real_t voxel_volume, index_t substrates_count, index_t x_min, index_t y_min,
-								 index_t x_dt, index_t y_dt, index_t x_size, index_t y_size)
+								 index_t x_dt, index_t y_dt, index_t x_size, index_t y_size, index_t n)
 {
 	int id = get_global_id(0);
+
+	if (id >= n * substrates_count)
+		return;
+
 	index_t i = id / substrates_count;
 	index_t s = id % substrates_count;
 
@@ -236,9 +244,13 @@ kernel void compute_densities_3d(global real_t* restrict substrate_densities, gl
 								 global const real_t* restrict cell_positions, global const index_t* restrict ballots,
 								 real_t voxel_volume, index_t substrates_count, index_t x_min, index_t y_min,
 								 index_t z_min, index_t x_dt, index_t y_dt, index_t z_dt, index_t x_size,
-								 index_t y_size, index_t z_size)
+								 index_t y_size, index_t z_size, index_t n)
 {
 	int id = get_global_id(0);
+
+	if (id >= n * substrates_count)
+		return;
+
 	index_t i = id / substrates_count;
 	index_t s = id % substrates_count;
 
@@ -266,9 +278,13 @@ kernel void compute_fused_1d(global real_t* restrict internalized_substrates,
 							 global const real_t* restrict reduced_factor, global const real_t* restrict cell_positions,
 							 global const index_t* ballots, global const int* conflicts,
 							 global atomic_int* conflicts_wrk, real_t voxel_volume, index_t substrates_count,
-							 index_t x_min, index_t x_dt, index_t x_size)
+							 index_t x_min, index_t x_dt, index_t x_size, index_t n)
 {
 	int id = get_global_id(0);
+
+	if (id >= n * substrates_count)
+		return;
+
 	index_t i = id / substrates_count;
 	index_t s = id % substrates_count;
 
@@ -306,9 +322,14 @@ kernel void compute_fused_2d(global real_t* restrict internalized_substrates,
 							 global const real_t* restrict reduced_factor, global const real_t* restrict cell_positions,
 							 global const index_t* ballots, global const int* conflicts,
 							 global atomic_int* conflicts_wrk, real_t voxel_volume, index_t substrates_count,
-							 index_t x_min, index_t y_min, index_t x_dt, index_t y_dt, index_t x_size, index_t y_size)
+							 index_t x_min, index_t y_min, index_t x_dt, index_t y_dt, index_t x_size, index_t y_size,
+							 index_t n)
 {
 	int id = get_global_id(0);
+
+	if (id >= n * substrates_count)
+		return;
+
 	index_t i = id / substrates_count;
 	index_t s = id % substrates_count;
 
@@ -347,9 +368,13 @@ kernel void compute_fused_3d(global real_t* restrict internalized_substrates,
 							 global const index_t* ballots, global const int* conflicts,
 							 global atomic_int* conflicts_wrk, real_t voxel_volume, index_t substrates_count,
 							 index_t x_min, index_t y_min, index_t z_min, index_t x_dt, index_t y_dt, index_t z_dt,
-							 index_t x_size, index_t y_size, index_t z_size)
+							 index_t x_size, index_t y_size, index_t z_size, index_t n)
 {
 	int id = get_global_id(0);
+
+	if (id >= n * substrates_count)
+		return;
+
 	index_t i = id / substrates_count;
 	index_t s = id % substrates_count;
 
