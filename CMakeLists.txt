@@ -32,7 +32,7 @@ endif()
 FetchContent_Declare(
 	noarr_structures
 	GIT_REPOSITORY https://github.com/ParaCoToUl/noarr-structures.git
-	GIT_TAG        c++17
+	GIT_TAG        0251ff3d0399924131c38a43e28dce8b50ba5441
 )
 FetchContent_Populate(noarr_structures)
 
