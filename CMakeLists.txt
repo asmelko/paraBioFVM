@@ -1,11 +1,9 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 
 project(paraBioFVM VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_FOR_DEVICE "Build opencl device code" OFF)
 option(DOUBLE_PRECISION "Use double instead of float" OFF)
@@ -32,7 +30,7 @@ endif()
 FetchContent_Declare(
 	noarr_structures
 	GIT_REPOSITORY https://github.com/ParaCoToUl/noarr-structures.git
-	GIT_TAG        0251ff3d0399924131c38a43e28dce8b50ba5441
+	GIT_TAG        main
 )
 FetchContent_Populate(noarr_structures)
 

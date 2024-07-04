@@ -301,7 +301,7 @@ void solve_slice(real_t* __restrict__ densities, const real_t* __restrict__ b, c
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 	const index_t n = dens_l | noarr::get_length<swipe_dim>();
 
-	auto diag_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'s'>(substrates_count) ^ noarr::sized_vector<'i'>(n);
+	auto diag_l = noarr::scalar<real_t>() ^ noarr::vector<'s'>(substrates_count) ^ noarr::vector<'i'>(n);
 
 	for (index_t i = 1; i < n; i++)
 	{
@@ -340,7 +340,7 @@ void solve_slice_omp(real_t* __restrict__ densities, const real_t* __restrict__ 
 	const index_t substrates_count = dens_l | noarr::get_length<'s'>();
 	const index_t n = dens_l | noarr::get_length<swipe_dim>();
 
-	auto diag_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'s'>(substrates_count) ^ noarr::sized_vector<'i'>(n);
+	auto diag_l = noarr::scalar<real_t>() ^ noarr::vector<'s'>(substrates_count) ^ noarr::vector<'i'>(n);
 
 #pragma omp for
 	for (index_t s = 0; s < substrates_count; s++)
@@ -382,10 +382,10 @@ void solve_slice_yz(real_t* __restrict__ densities, const real_t* __restrict__ b
 	const index_t substrates_count = dens_l_orig | noarr::get_length<'s'>();
 	const index_t n = dens_l_orig | noarr::get_length<swipe_dim>();
 
-	auto diag_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'X'>(substrates_count * copy_dim)
-				  ^ noarr::sized_vector<swipe_dim>(n);
+	auto diag_l =
+		noarr::scalar<real_t>() ^ noarr::vector<'X'>(substrates_count * copy_dim) ^ noarr::vector<swipe_dim>(n);
 
-	auto c_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'X'>(substrates_count * copy_dim);
+	auto c_l = noarr::scalar<real_t>() ^ noarr::vector<'X'>(substrates_count * copy_dim);
 
 	auto dens_l = dens_l_orig ^ noarr::merge_blocks<'x', 's', 'X'>()
 				  ^ noarr::into_blocks_static<'X', 'b', 'x', 'X'>(substrates_count * copy_dim);
@@ -402,16 +402,15 @@ void solve_slice_yz(real_t* __restrict__ densities, const real_t* __restrict__ b
 			(dens_l | noarr::get_at(densities, state)) * (diag_l | noarr::get_at(b, state));
 	});
 
-	for (index_t i = n - 2; i >= 0; i--)
-	{
-		noarr::traverser(dens_l).order(noarr::fix<swipe_dim>(i)).for_each([=](auto state) {
+	noarr::traverser(dens_l)
+		.order(noarr::reverse<swipe_dim>() ^ noarr::shift<swipe_dim>(noarr::lit<1>))
+		.for_each([=](auto state) {
 			auto next_state = noarr::neighbor<swipe_dim>(state, 1);
 			(dens_l | noarr::get_at(densities, state)) =
 				((dens_l | noarr::get_at(densities, state))
 				 - (c_l | noarr::get_at(c, state)) * (dens_l | noarr::get_at(densities, next_state)))
 				* (diag_l | noarr::get_at(b, state));
 		});
-	}
 }
 
 template <char swipe_dim, typename density_layout_t>
@@ -423,10 +422,10 @@ void solve_slice_yz_omp(real_t* __restrict__ densities, const real_t* __restrict
 	const index_t substrates_count = dens_l_orig | noarr::get_length<'s'>();
 	const index_t n = dens_l_orig | noarr::get_length<swipe_dim>();
 
-	auto diag_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'X'>(substrates_count * copy_dim)
-				  ^ noarr::sized_vector<swipe_dim>(n);
+	auto diag_l =
+		noarr::scalar<real_t>() ^ noarr::vector<'X'>(substrates_count * copy_dim) ^ noarr::vector<swipe_dim>(n);
 
-	auto c_l = noarr::scalar<real_t>() ^ noarr::sized_vector<'X'>(substrates_count * copy_dim);
+	auto c_l = noarr::scalar<real_t>() ^ noarr::vector<'X'>(substrates_count * copy_dim);
 
 	auto dens_l = dens_l_orig ^ noarr::merge_blocks<'x', 's', 'X'>()
 				  ^ noarr::into_blocks_dynamic<'X', 'x', 'X', 'b'>(substrates_count * copy_dim);
