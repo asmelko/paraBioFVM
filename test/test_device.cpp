@@ -211,16 +211,17 @@ TEST(device_dirichlet_solver, one_cond_D2)
 	noarr::traverser(dens_l).for_dims<'x', 'y'>([&](auto t) {
 		auto s = t.state();
 
+		auto [x, y] = noarr::get_indices<'x', 'y'>(s);
+
 		auto l = dens_l ^ noarr::fix(s);
 		// exacly at the boundary
-		if (noarr::get_index<'x'>(s) == 1 && noarr::get_index<'y'>(s) == 1)
+		if (x == 1 && y == 1)
 			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 10);
 		// diagonally next to the boundary
-		else if (std::abs((index_t)noarr::get_index<'x'>(s) - (index_t)1) == 1
-				 && std::abs((index_t)noarr::get_index<'y'>(s) - (index_t)1) == 1)
+		else if (std::abs((index_t)x - (index_t)1) == 1 && std::abs((index_t)y - (index_t)1) == 1)
 			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.0054876315);
 		// left and right to the boundary
-		else if (std::abs((index_t)noarr::get_index<'x'>(s) - (index_t)1) == 1 && noarr::get_index<'y'>(s) == 1)
+		else if (std::abs((index_t)x - (index_t)1) == 1 && y == 1)
 			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.0056665326);
 		// above and below to the boundary
 		else
