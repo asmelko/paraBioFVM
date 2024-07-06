@@ -1,0 +1,16 @@
+[submodule "submodules/noarr-structures"]
+	path = submodules/noarr-structures
+	url = https://github.com/ParaCoToUl/noarr-structures
+	branch = main
+[submodule "submodules/OpenCL-Headers"]
+	path = submodules/OpenCL-Headers
+	url = https://github.com/KhronosGroup/OpenCL-Headers
+	branch = main
+[submodule "submodules/OpenCL-ICD-Loader"]
+	path = submodules/OpenCL-ICD-Loader
+	url = https://github.com/KhronosGroup/OpenCL-ICD-Loader
+	branch = main
+[submodule "submodules/OpenCL-CLHPP"]
+	path = submodules/OpenCL-CLHPP
+	url = https://github.com/KhronosGroup/OpenCL-CLHPP
+	branch = main

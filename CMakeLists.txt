@@ -37,8 +37,8 @@ endif()
 # Fetch noarr
 FetchContent_Declare(
   noarr_structures
-  GIT_REPOSITORY https://github.com/ParaCoToUl/noarr-structures.git
-  GIT_TAG main)
+  URL file://${CMAKE_CURRENT_SOURCE_DIR}/submodules/noarr-structures
+      DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 FetchContent_MakeAvailable(noarr_structures)
 
 # Target BioFVMCore
