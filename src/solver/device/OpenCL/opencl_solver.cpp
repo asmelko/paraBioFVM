@@ -5,7 +5,7 @@
 #include <type_traits>
 
 #ifndef BioFVM_OPENCL_SOURCES
-#define BioFVM_OPENCL_SOURCES ""
+	#define BioFVM_OPENCL_SOURCES ""
 #endif
 
 using namespace biofvm::solvers::device;
