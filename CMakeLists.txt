@@ -12,6 +12,12 @@ option(BUILD_TESTS "Build tests" OFF)
 option(BUILD_FOR_DEVICE "Build opencl device code" OFF)
 option(DOUBLE_PRECISION "Use double instead of float" OFF)
 
+if(MSVC)
+  set(BIOFVM_CPP_COMPILE_OPTIONS /W4 /bigobj)
+else()
+  set(BIOFVM_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic)
+endif()
+
 set(DEVICE_IMPL
     "opencl"
     CACHE STRING "Which device implementation to choose.")
@@ -47,6 +53,7 @@ file(GLOB common_solver_files "src/solver/*")
 file(GLOB host_solver_files "src/solver/host/*")
 
 add_library(BioFVMCore ${src_files} ${common_solver_files} ${host_solver_files})
+target_compile_options(BioFVMCore PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${BIOFVM_CPP_COMPILE_OPTIONS}>)
 
 include_directories(include/BioFVM src)
 target_include_directories(BioFVMCore
@@ -71,6 +78,7 @@ if(BUILD_FOR_DEVICE)
     add_subdirectory(src/solver/device/CUDA)
   endif()
 
+  target_compile_options(device_solver PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${BIOFVM_CPP_COMPILE_OPTIONS}>)
   target_link_libraries(BioFVMCore PUBLIC device_solver)
 
   if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -103,10 +111,4 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # Target BioFVM
   add_executable(BioFVM src/main.cpp)
   target_link_libraries(BioFVM BioFVMCore)
-endif()
-
-if(MSVC)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/W4 /bigobj>)
-else()
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic>)
 endif()

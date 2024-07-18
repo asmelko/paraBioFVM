@@ -67,7 +67,7 @@ class cell_solver : opencl_solver, common_solver
 					  index_t>
 		compute_fused_1d_;
 
-	cl::Kernel compute_densities_2d_, compute_densities_3d_, compute_fused_2d_, compute_fused_3d_;
+	cl::Kernel compute_densities_2d_, compute_fused_2d_, compute_densities_3d_, compute_fused_3d_;
 
 
 	void resize(microenvironment& m);
