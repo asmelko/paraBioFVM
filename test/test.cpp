@@ -35,6 +35,145 @@ class host_diffusion_solver : public testing::TestWithParam<index_t>
 
 INSTANTIATE_TEST_SUITE_P(vectorize, host_diffusion_solver, testing::Values(4, 1));
 
+TEST(host_diffusion_solver_variants, D1_reversed_b)
+{
+	cartesian_mesh mesh(1, { 0, 0, 0 }, { 200, 0, 0 }, { 20, 0, 0 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	m.diffusion_time_step = 0.01;
+	m.decay_rates[0] = 0.1;
+	m.diffusion_coefficients[0] = 100000;
+
+	real_t a0 = -m.diffusion_time_step * m.diffusion_coefficients[0] / (mesh.voxel_shape[0] * mesh.voxel_shape[0]);
+	real_t b0 = 1 + m.decay_rates[0] * m.diffusion_time_step / mesh.dims
+				+ 2 * m.diffusion_time_step * m.diffusion_coefficients[0] / (mesh.voxel_shape[0] * mesh.voxel_shape[0]);
+
+	// print a0 and b0
+	{
+		std::cout << "a0 " << a0 << std::endl;
+		std::cout << "b0 " << b0 << std::endl;
+	}
+
+	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape) ^ noarr::fix<'s'>(0);
+
+	auto bag = make_bag(dens_l, m.substrate_densities.get());
+
+	{
+		real_t e = a0 / (b0 + a0);
+		std::cout << "e0 " << e << std::endl;
+
+		bag.at<'x'>(0) = bag.at<'x'>(0) / (b0 + a0);
+
+		for (index_t x = 1; x < mesh.grid_shape[0] - 1; ++x)
+		{
+			bag.at<'x'>(x) = (bag.at<'x'>(x) - a0 * bag.at<'x'>(x - 1)) / (b0 - a0 * e);
+
+			e = a0 / (b0 - a0 * e);
+			std::cout << "e" << x << " " << e << std::endl;
+		}
+
+		bag.at<'x'>(mesh.grid_shape[0] - 1) =
+			(bag.at<'x'>(mesh.grid_shape[0] - 1) - a0 * bag.at<'x'>(mesh.grid_shape[0] - 2)) / (b0 + a0 - a0 * e);
+
+		for (index_t x = mesh.grid_shape[0] - 2; x >= 1; --x)
+		{
+			bag.at<'x'>(x) = bag.at<'x'>(x) - e * bag.at<'x'>(x + 1);
+
+			std::cout << "e" << x << " " << e << std::endl;
+			e = (b0 * e - a0) / (a0 * e);
+		}
+		bag.at<'x'>(0) = bag.at<'x'>(0) - (a0 / (b0 + a0)) * bag.at<'x'>(1);
+	}
+
+	noarr::traverser(layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape))
+		.for_dims<'x'>([&](auto t) {
+			auto s = t.state();
+
+			auto l = dens_l ^ noarr::fix(s);
+
+			std::cout << (l | noarr::get_at<'s'>(m.substrate_densities.get(), 0)) << std::endl;
+
+			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.99900103);
+			// EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 1), 0.0625);
+		});
+}
+
+TEST(host_diffusion_solver_variants, D1_reversed_b2)
+{
+	cartesian_mesh mesh(1, { 0, 0, 0 }, { 200, 0, 0 }, { 20, 0, 0 });
+
+	index_t substrates_count = 2;
+	auto m = default_microenv(mesh);
+
+	m.diffusion_time_step = 0.01;
+	m.decay_rates[0] = 0.1;
+	m.diffusion_coefficients[0] = 100000;
+
+	real_t a0 = -m.diffusion_time_step * m.diffusion_coefficients[0] / (mesh.voxel_shape[0] * mesh.voxel_shape[0]);
+	real_t b0 = 1 + m.decay_rates[0] * m.diffusion_time_step / mesh.dims
+				+ 2 * m.diffusion_time_step * m.diffusion_coefficients[0] / (mesh.voxel_shape[0] * mesh.voxel_shape[0]);
+	real_t b00 = b0 + a0;
+
+	b0 /= a0;
+	b00 /= a0;
+
+	// print a0 and b0
+	{
+		std::cout << "a0 " << a0 << std::endl;
+		std::cout << "b0 " << b0 << std::endl;
+	}
+
+	auto dens_l = layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape) ^ noarr::fix<'s'>(0);
+
+	auto bag = make_bag(dens_l, m.substrate_densities.get());
+
+	{
+		real_t e = 1 / b00;
+		std::cout << "e0 " << e << std::endl;
+
+		bag.at<'x'>(0) = bag.at<'x'>(0) / (b00);
+
+		for (index_t x = 1; x < mesh.grid_shape[0] - 1; ++x)
+		{
+			bag.at<'x'>(x) = (bag.at<'x'>(x) - bag.at<'x'>(x - 1)) / (b0 - e);
+
+			e = 1 / (b0 - e);
+			std::cout << "e" << x << " " << e << std::endl;
+		}
+
+		bag.at<'x'>(mesh.grid_shape[0] - 1) =
+			(bag.at<'x'>(mesh.grid_shape[0] - 1) - bag.at<'x'>(mesh.grid_shape[0] - 2)) / (b00 - e);
+
+		for (index_t x = mesh.grid_shape[0] - 2; x >= 1; --x)
+		{
+			bag.at<'x'>(x) = bag.at<'x'>(x) - e * bag.at<'x'>(x + 1);
+
+			std::cout << "e" << x << " " << e << std::endl;
+			e = b0 - 1 / e;
+		}
+		bag.at<'x'>(0) = bag.at<'x'>(0) - (1 / b00) * bag.at<'x'>(1);
+
+		for (index_t x = 0; x < mesh.grid_shape[0]; ++x)
+		{
+			bag.at<'x'>(x) /= a0;
+		}
+	}
+
+	noarr::traverser(layout_traits<1>::construct_density_layout(substrates_count, mesh.grid_shape))
+		.for_dims<'x'>([&](auto t) {
+			auto s = t.state();
+
+			auto l = dens_l ^ noarr::fix(s);
+
+			std::cout << (l | noarr::get_at<'s'>(m.substrate_densities.get(), 0)) << std::endl;
+
+			EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 0), 0.99900103);
+			// EXPECT_FLOAT_EQ(l | noarr::get_at<'s'>(m.substrate_densities.get(), 1), 0.0625);
+		});
+}
+
 TEST_P(host_diffusion_solver, D1_uniform)
 {
 	cartesian_mesh mesh(1, { 0, 0, 0 }, { 80, 0, 0 }, { 20, 0, 0 });
