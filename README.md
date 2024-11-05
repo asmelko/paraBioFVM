@@ -40,7 +40,11 @@ The classes with their functionalities are provided in the form of header files 
 ## Build and requirements
 We use CMake as the build system. The buildable targets are the static library `BioFVMCore`, unit tests executable `unit_BioFVM` and `BioFVM` executable, which runs the solvers and outputs a simple benchmark.
 
-The project uses git submodules, so these need to be initialized before building any target.
+The project uses git submodules, so these need to be initialized before building any target:
+
+```sh
+git submodule update --init --recursive
+```
 
 OpenMP is required only for parallel CPU run. If OpenMP can not be found in the system, the solvers will run a vectorized serial code.
 
@@ -48,7 +52,13 @@ The C++ compiler must be C++20 compliant.
 
 The implementation uses single-precision floating point arithmetics. To enable double precision, just pass `-DDOUBLE_PRECISION` when doing CMake configuration step.
 
+The following steps can be used to build the project in the `build` directory using CMake:
 
+```sh
+# add -DDOUBLE_PRECISION for double precision
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
 
 ## Experimental GPU support
 When CMake option `BUILD_FOR_DEVICE` is set to `ON`, a GPU/accelerator solver implementation will be used. The GPU code is written using OpenCL v2.0. No special requirement is needed apart from the OpenCL capable device (the OpenCL headers and ICD-Loader will be fetched and compiled by CMake automatically).
