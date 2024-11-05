@@ -5,8 +5,9 @@ file(GLOB device_solver_files "*")
 add_library(device_solver OBJECT ${device_solver_files})
 
 FetchContent_Declare(
-  opencl_headers URL file://${CMAKE_SOURCE_DIR}/submodules/OpenCL-Headers
-                     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  opencl_headers
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  URL file://${CMAKE_SOURCE_DIR}/submodules/OpenCL-Headers)
 FetchContent_MakeAvailable(opencl_headers)
 
 if(${APPLE})
@@ -15,13 +16,15 @@ if(${APPLE})
 endif()
 
 FetchContent_Declare(
-  opencl_icd URL file://${CMAKE_SOURCE_DIR}/submodules/OpenCL-ICD-Loader
-                 DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  opencl_icd
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  URL file://${CMAKE_SOURCE_DIR}/submodules/OpenCL-ICD-Loader)
 FetchContent_MakeAvailable(opencl_icd)
 
 FetchContent_Declare(
-  opencl_hpp URL file://${CMAKE_SOURCE_DIR}/submodules/OpenCL-CLHPP
-                 DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  opencl_hpp
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  URL file://${CMAKE_SOURCE_DIR}/submodules/OpenCL-CLHPP)
 FetchContent_MakeAvailable(opencl_hpp)
 
 target_include_directories(device_solver
