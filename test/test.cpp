@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <noarr/structures/extra/traverser.hpp>
@@ -5,7 +7,9 @@
 
 #include "../src/solver/host/solver.h"
 #include "agent_container.h"
+#include "mesh.h"
 #include "microenvironment.h"
+#include "microenvironment_builder.h"
 #include "traits.h"
 #include "utils.h"
 
@@ -1211,6 +1215,113 @@ TEST_P(host_agents, conflict_big)
 			EXPECT_FLOAT_EQ((densities.at<'x', 's'>(x, 1)), expected[2 * x + 1]);
 		}
 	}
+}
+
+TEST(microenv_builder_init_conds_csv, with_header)
+{
+	microenvironment_builder builder;
+
+	builder.resize(3, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
+
+	builder.add_density("d1", "x");
+	builder.add_density("d2", "x");
+
+	// write initial conditions to a file
+	{
+		std::ofstream file("initial_conditions.csv");
+
+		file << "x,y,z,d1,d2\n";
+		file << "1,0,0,1,4\n";
+		file << "0,1,0,2,5\n";
+		file << "0,0,1,3,6\n";
+
+		file.close();
+	}
+
+	builder.load_initial_conditions_from_file("initial_conditions.csv");
+
+	auto m = builder.build();
+
+	auto dens_l = layout_traits<3>::construct_density_layout(2, m.mesh.grid_shape);
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 0, 0, 0)), 1);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 0, 0, 1)), 4);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 1, 0, 0)), 2);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 1, 0, 1)), 5);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 1, 0)), 3);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 1, 1)), 6);
+}
+
+TEST(microenv_builder_init_conds_csv, with_switched_header)
+{
+	microenvironment_builder builder;
+
+	builder.resize(3, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
+
+	builder.add_density("d1", "x");
+	builder.add_density("d2", "x");
+
+	// write initial conditions to a file
+	{
+		std::ofstream file("initial_conditions.csv");
+
+		file << "x,y,z,d2,d1\n";
+		file << "1,0,0,1,4\n";
+		file << "0,1,0,2,5\n";
+		file << "0,0,1,3,6\n";
+
+		file.close();
+	}
+
+	builder.load_initial_conditions_from_file("initial_conditions.csv");
+
+	auto m = builder.build();
+
+	auto dens_l = layout_traits<3>::construct_density_layout(2, m.mesh.grid_shape);
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 0, 0, 0)), 4);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 0, 0, 1)), 1);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 1, 0, 0)), 5);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 1, 0, 1)), 2);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 1, 0)), 6);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 1, 1)), 3);
+}
+
+TEST(microenv_builder_init_conds_csv, without_header)
+{
+	microenvironment_builder builder;
+
+	builder.resize(3, { 0, 0, 0 }, { 100, 100, 100 }, { 20, 20, 20 });
+
+	builder.add_density("d1", "x");
+	builder.add_density("d2", "x");
+
+	// write initial conditions to a file
+	{
+		std::ofstream file("initial_conditions.csv");
+
+		file << "1,0,0,1,4\n";
+		file << "0,1,0,2,5\n";
+		file << "0,0,1,3,6\n";
+
+		file.close();
+	}
+
+	builder.load_initial_conditions_from_file("initial_conditions.csv");
+
+	auto m = builder.build();
+
+	auto dens_l = layout_traits<3>::construct_density_layout(2, m.mesh.grid_shape);
+	auto densities = noarr::make_bag(dens_l, m.substrate_densities.get());
+
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 0, 0, 0)), 1);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(1, 0, 0, 1)), 4);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 1, 0, 0)), 2);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 1, 0, 1)), 5);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 1, 0)), 3);
+	EXPECT_FLOAT_EQ((densities.at<'x', 'y', 'z', 's'>(0, 0, 1, 1)), 6);
 }
 
 } // namespace host

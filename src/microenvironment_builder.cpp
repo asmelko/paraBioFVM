@@ -2,8 +2,9 @@
 
 #include <algorithm>
 #include <cstring>
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
-#include <type_traits>
 
 #include "microenvironment.h"
 #include "types.h"
@@ -143,6 +144,98 @@ void microenvironment_builder::fill_dirichlet_vectors(microenvironment& m)
 	}
 }
 
+void microenvironment_builder::load_initial_conditions_from_file(const std::string& file)
+{
+	initial_conditions_file = file;
+}
+
+void microenvironment_builder::fill_initial_conditions_from_file(microenvironment& m)
+{
+	if (initial_conditions_file.empty())
+	{
+		return;
+	}
+
+	std::ifstream file(initial_conditions_file);
+
+	if (!file.is_open())
+	{
+		throw std::runtime_error("Cannot open file " + initial_conditions_file);
+	}
+
+	auto split_line = [](const std::string& line) {
+		std::vector<std::string> values;
+		std::stringstream ss(line);
+		std::string value;
+		while (std::getline(ss, value, ','))
+		{
+			values.push_back(value);
+		}
+		return values;
+	};
+
+	std::vector<index_t> substrate_indices;
+	// check if csv file has header
+	{
+		std::string line;
+		std::getline(file, line);
+		auto values = split_line(line);
+		if (values.size() < 4)
+		{
+			throw std::runtime_error("Invalid initial conditions file format");
+		}
+
+		// setup substrate_indices
+		if ((values[0] == "X" || values[0] == "x") && (values[1] == "Y" || values[1] == "y")
+			&& (values[2] == "Z" || values[2] == "z"))
+		{
+			for (std::size_t i = 3; i < values.size(); i++)
+			{
+				auto it = std::find(m.substrates_names.begin(), m.substrates_names.end(), values[i]);
+				if (it == m.substrates_names.end())
+				{
+					throw std::runtime_error("Substrate " + values[i] + " not found during initial conditions loading");
+				}
+				substrate_indices.push_back(std::distance(m.substrates_names.begin(), it));
+			}
+		}
+		else
+		{
+			for (std::size_t i = 3; i < values.size(); i++)
+				substrate_indices.push_back(i - 3);
+
+			// rewind file
+			file.clear();
+			file.seekg(0, std::ios::beg);
+		}
+	}
+
+	while (true)
+	{
+		std::string line;
+		std::getline(file, line);
+
+		if (file.eof())
+			break;
+
+		auto values = split_line(line);
+		if ((index_t)values.size() != 3 + m.substrates_count)
+		{
+			throw std::runtime_error("Invalid initial conditions file format");
+		}
+
+		point_t<index_t, 3> position;
+		position[0] = std::stoi(values[0]);
+		position[1] = std::stoi(values[1]);
+		position[2] = std::stoi(values[2]);
+
+		for (std::size_t i = 3; i < values.size(); i++)
+		{
+			m.substrate_density_value(position, substrate_indices[i - 3]) = std::stod(values[i]);
+		}
+	}
+}
+
 microenvironment microenvironment_builder::build()
 {
 	if (!mesh_)
@@ -152,7 +245,7 @@ microenvironment microenvironment_builder::build()
 
 	if (substrates_names.empty())
 	{
-		throw std::runtime_error("Microenvironment cannot be built wit no densities");
+		throw std::runtime_error("Microenvironment cannot be built with no densities");
 	}
 
 	microenvironment m(*mesh_, substrates_names.size(), time_step, initial_conditions.data());
@@ -163,6 +256,8 @@ microenvironment microenvironment_builder::build()
 
 	m.substrates_names = std::move(substrates_names);
 	m.substrates_units = std::move(substrates_units);
+
+	fill_initial_conditions_from_file(m);
 
 	m.diffusion_coefficients = std::make_unique<real_t[]>(diffusion_coefficients.size());
 	std::memcpy(m.diffusion_coefficients.get(), diffusion_coefficients.data(),

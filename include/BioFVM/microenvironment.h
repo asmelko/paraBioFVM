@@ -57,7 +57,7 @@ struct microenvironment
 
 	index_t find_substrate_index(const std::string& name) const;
 
-	real_t substrate_density_value(point_t<index_t, 3> position, index_t substrate_index) const;
+	real_t& substrate_density_value(point_t<index_t, 3> position, index_t substrate_index);
 
 	void display_info();
 };

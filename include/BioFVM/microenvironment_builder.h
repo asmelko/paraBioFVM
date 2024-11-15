@@ -35,7 +35,11 @@ class microenvironment_builder
 
 	bool compute_internalized_substrates = false;
 
+	std::string initial_conditions_file;
+
 	void fill_dirichlet_vectors(microenvironment& m);
+
+	void fill_initial_conditions_from_file(microenvironment& m);
 
 public:
 	void set_name(const std::string& name);
@@ -65,6 +69,8 @@ public:
 							bulk_func_t supply_target_densities_func);
 
 	void do_compute_internalized_substrates();
+	
+	void load_initial_conditions_from_file(const std::string& file);
 
 	microenvironment build();
 };
