@@ -29,8 +29,9 @@ include(FetchContent)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR AND BUILD_TESTS)
   # Fetch Googletest
   FetchContent_Declare(
-    googletest URL file://${CMAKE_CURRENT_SOURCE_DIR}/submodules/googletest
-                   DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    googletest
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    URL file://${CMAKE_CURRENT_SOURCE_DIR}/submodules/googletest)
   # For Windows: Prevent overriding the parent project's compiler/linker
   # settings
   set(gtest_force_shared_crt
@@ -42,8 +43,8 @@ endif()
 # Fetch noarr
 FetchContent_Declare(
   noarr_structures
-  URL file://${CMAKE_CURRENT_SOURCE_DIR}/submodules/noarr-structures
-      DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  URL file://${CMAKE_CURRENT_SOURCE_DIR}/submodules/noarr-structures)
 FetchContent_MakeAvailable(noarr_structures)
 
 # Target BioFVMCore
@@ -53,7 +54,8 @@ file(GLOB common_solver_files "src/solver/*")
 file(GLOB host_solver_files "src/solver/host/*")
 
 add_library(BioFVMCore ${src_files} ${common_solver_files} ${host_solver_files})
-target_compile_options(BioFVMCore PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${BIOFVM_CPP_COMPILE_OPTIONS}>)
+target_compile_options(
+  BioFVMCore PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${BIOFVM_CPP_COMPILE_OPTIONS}>)
 
 include_directories(include/BioFVM src)
 target_include_directories(BioFVMCore
@@ -78,7 +80,9 @@ if(BUILD_FOR_DEVICE)
     add_subdirectory(src/solver/device/CUDA)
   endif()
 
-  target_compile_options(device_solver PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${BIOFVM_CPP_COMPILE_OPTIONS}>)
+  target_compile_options(
+    device_solver
+    PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${BIOFVM_CPP_COMPILE_OPTIONS}>)
   target_link_libraries(BioFVMCore PUBLIC device_solver)
 
   if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
