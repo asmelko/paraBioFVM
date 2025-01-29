@@ -21,7 +21,7 @@ struct cartesian_mesh
 	index_t voxel_volume() const;
 
 	template <index_t dims>
-	point_t<index_t, 3> voxel_position(point_t<real_t, 3> position) const;
+	point_t<index_t, 3> voxel_position(const real_t* position) const;
 
 	point_t<real_t, 3> voxel_center(point_t<index_t, 3> position) const;
 
