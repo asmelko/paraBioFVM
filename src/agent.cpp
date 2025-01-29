@@ -50,7 +50,12 @@ point_t<real_t, 3> agent::get_position() const
 
 point_t<index_t, 3> agent::voxel_index() const
 {
-	return point_t<index_t, 3> { data_.m.mesh.voxel_position(get_position()) };
+	if (data_.m.mesh.dims == 1)
+		return data_.m.mesh.voxel_position<1>(get_position());
+	else if (data_.m.mesh.dims == 2)
+		return data_.m.mesh.voxel_position<2>(get_position());
+	else
+		return data_.m.mesh.voxel_position<3>(get_position());
 }
 
 real_t* agent::nearest_density_vector()
