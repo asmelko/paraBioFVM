@@ -1,5 +1,6 @@
 #include "agent_data.h"
 
+#include "data_utils.h"
 #include "microenvironment.h"
 
 using namespace biofvm;
@@ -30,26 +31,23 @@ void agent_data::remove(index_t index)
 	if (index == agents_count)
 		return;
 
-	for (index_t s = 0; s < m.substrates_count; s++)
-	{
-		secretion_rates[index * m.substrates_count + s] = secretion_rates[agents_count * m.substrates_count + s];
-		saturation_densities[index * m.substrates_count + s] =
-			saturation_densities[agents_count * m.substrates_count + s];
-		uptake_rates[index * m.substrates_count + s] = uptake_rates[agents_count * m.substrates_count + s];
-		net_export_rates[index * m.substrates_count + s] = net_export_rates[agents_count * m.substrates_count + s];
+	move_vector(secretion_rates.data() + index * m.substrates_count,
+				secretion_rates.data() + agents_count * m.substrates_count, m.substrates_count);
+	move_vector(saturation_densities.data() + index * m.substrates_count,
+				saturation_densities.data() + agents_count * m.substrates_count, m.substrates_count);
+	move_vector(uptake_rates.data() + index * m.substrates_count,
+				uptake_rates.data() + agents_count * m.substrates_count, m.substrates_count);
+	move_vector(net_export_rates.data() + index * m.substrates_count,
+				net_export_rates.data() + agents_count * m.substrates_count, m.substrates_count);
 
-		internalized_substrates[index * m.substrates_count + s] =
-			internalized_substrates[agents_count * m.substrates_count + s];
-		fraction_released_at_death[index * m.substrates_count + s] =
-			fraction_released_at_death[agents_count * m.substrates_count + s];
-		fraction_transferred_when_ingested[index * m.substrates_count + s] =
-			fraction_transferred_when_ingested[agents_count * m.substrates_count + s];
-	}
+	move_vector(internalized_substrates.data() + index * m.substrates_count,
+				internalized_substrates.data() + agents_count * m.substrates_count, m.substrates_count);
+	move_vector(fraction_released_at_death.data() + index * m.substrates_count,
+				fraction_released_at_death.data() + agents_count * m.substrates_count, m.substrates_count);
+	move_vector(fraction_transferred_when_ingested.data() + index * m.substrates_count,
+				fraction_transferred_when_ingested.data() + agents_count * m.substrates_count, m.substrates_count);
 
 	volumes[index] = volumes[agents_count];
 
-	for (index_t i = 0; i < m.mesh.dims; i++)
-	{
-		positions[index * m.mesh.dims + i] = positions[agents_count * m.mesh.dims + i];
-	}
+	move_vector(positions.data() + index * m.mesh.dims, positions.data() + agents_count * m.mesh.dims, m.mesh.dims);
 }
