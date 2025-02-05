@@ -47,6 +47,24 @@ FetchContent_Declare(
   URL file://${CMAKE_CURRENT_SOURCE_DIR}/submodules/noarr-structures)
 FetchContent_MakeAvailable(noarr_structures)
 
+set(VTK_GROUP_ENABLE_Imaging NO)
+set(VTK_GROUP_ENABLE_MPI NO)
+set(VTK_GROUP_ENABLE_Qt NO)
+set(VTK_GROUP_ENABLE_Rendering NO)
+set(VTK_GROUP_ENABLE_StandAlone DONT_WANT)
+set(VTK_GROUP_ENABLE_Views NO)
+set(VTK_GROUP_ENABLE_Web NO)
+
+set(VTK_MODULE_ENABLE_VTK_IOXML YES)
+set(BUILD_SHARED_LIBS OFF)
+
+# Fetch vtk
+FetchContent_Declare(
+  vtk
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  URL file://${CMAKE_CURRENT_SOURCE_DIR}/submodules/VTK)
+FetchContent_MakeAvailable(vtk)
+
 # Target BioFVMCore
 file(GLOB src_files "src/*")
 list(FILTER src_files EXCLUDE REGEX ".*main.*")
@@ -69,6 +87,8 @@ find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
   target_link_libraries(BioFVMCore PUBLIC OpenMP::OpenMP_CXX)
 endif()
+
+target_link_libraries(BioFVMCore PUBLIC IOXML)
 
 if(BUILD_FOR_DEVICE)
   if(DEVICE_IMPL STREQUAL "opencl")

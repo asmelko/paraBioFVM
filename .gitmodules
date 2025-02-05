@@ -17,3 +17,6 @@
 [submodule "submodules/googletest"]
 	path = submodules/googletest
 	url = https://github.com/google/googletest
+[submodule "submodules/VTK"]
+	path = submodules/VTK
+	url = https://github.com/Kitware/VTK.git

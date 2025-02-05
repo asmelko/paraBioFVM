@@ -39,7 +39,7 @@ FixNamespaceComments: true
 SortIncludes: true
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:           '<[[:alnum:]._]+>'
+  - Regex:           '<[[:alnum:]_]+>'
     Priority:        1
   - Regex:           '\".*\"'
     Priority:        3
