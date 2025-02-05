@@ -2,11 +2,14 @@
 
 #include <string_view>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <vtkDoubleArray.h>
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkSmartPointer.h>
 #include <vtkXMLImageDataWriter.h>
+#pragma GCC diagnostic pop
 
 #include "microenvironment_serializer.h"
 
