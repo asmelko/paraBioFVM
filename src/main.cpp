@@ -74,7 +74,7 @@ int main()
 
 	s.initialize(m);
 
-	vtk_microenvironment_serializer serializer("output", m);
+	vtk_serializer serializer("output", m);
 
 	for (index_t i = 0; i < 100; ++i)
 	{

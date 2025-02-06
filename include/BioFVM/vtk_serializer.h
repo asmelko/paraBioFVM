@@ -11,11 +11,11 @@
 #include <vtkXMLImageDataWriter.h>
 #pragma GCC diagnostic pop
 
-#include "microenvironment_serializer.h"
+#include "serializer.h"
 
 namespace biofvm {
 
-class vtk_microenvironment_serializer : public microenvironment_serializer
+class vtk_serializer : public serializer
 {
 	biofvm::index_t iteration_;
 
@@ -34,7 +34,7 @@ class vtk_microenvironment_serializer : public microenvironment_serializer
 #endif
 
 public:
-	vtk_microenvironment_serializer(std::string_view output_dir, microenvironment& m);
+	vtk_serializer(std::string_view output_dir, microenvironment& m);
 
 	void serialize_one_timestep(const microenvironment& m) override;
 };

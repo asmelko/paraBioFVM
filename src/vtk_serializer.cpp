@@ -19,7 +19,7 @@
 
 using namespace biofvm;
 
-vtk_microenvironment_serializer::vtk_microenvironment_serializer(std::string_view output_dir, microenvironment& m)
+vtk_serializer::vtk_serializer(std::string_view output_dir, microenvironment& m)
 	: iteration_(0),
 	  output_dir_(output_dir),
 	  vti_dir_(std::filesystem::path(output_dir_) / "vtk_microenvironment"),
@@ -59,7 +59,7 @@ vtk_microenvironment_serializer::vtk_microenvironment_serializer(std::string_vie
 )";
 }
 
-void vtk_microenvironment_serializer::serialize_one_timestep(const microenvironment& m)
+void vtk_serializer::serialize_one_timestep(const microenvironment& m)
 {
 	auto l = layout_traits<3>::construct_density_layout(m.substrates_count, m.mesh.grid_shape);
 	auto linearized_l = l ^ noarr::merge_blocks<'z', 'y'>() ^ noarr::merge_blocks<'y', 'x'>();

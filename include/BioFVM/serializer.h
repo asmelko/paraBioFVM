@@ -3,7 +3,7 @@
 
 namespace biofvm {
 
-struct microenvironment_serializer
+struct serializer
 {
 	virtual void serialize_one_timestep(const microenvironment& m) = 0;
 };
