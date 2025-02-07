@@ -20,14 +20,10 @@
 using namespace biofvm;
 
 vtk_serializer::vtk_serializer(std::string_view output_dir, microenvironment& m)
-	: iteration_(0),
-	  output_dir_(output_dir),
-	  vti_dir_(std::filesystem::path(output_dir_) / "vtk_microenvironment"),
+	: vtk_serializer_base(output_dir, "vtk_microenvironment"),
 	  writer_(vtkSmartPointer<vtkXMLImageDataWriter>::New()),
 	  image_data_(vtkSmartPointer<vtkImageData>::New())
 {
-	std::filesystem::create_directories(vti_dir_);
-
 	auto x_extent_start = m.mesh.bounding_box_mins[0] / m.mesh.voxel_shape[0];
 	auto x_extent_end = x_extent_start + m.mesh.grid_shape[0];
 
@@ -52,11 +48,6 @@ vtk_serializer::vtk_serializer(std::string_view output_dir, microenvironment& m)
 
 	writer_->SetInputData(image_data_);
 	writer_->SetCompressorTypeToLZ4();
-
-	pvd_contents_ = R"(<?xml version="1.0"?>
-<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
-  <Collection>
-)";
 }
 
 void vtk_serializer::serialize_one_timestep(const microenvironment& m)
@@ -73,21 +64,13 @@ void vtk_serializer::serialize_one_timestep(const microenvironment& m)
 
 	ss << "microenvironment_" << std::setw(6) << std::setfill('0') << iteration_ << ".vti";
 
-	auto file_path = std::filesystem::path(vti_dir_) / ss.str();
+	auto file_name = ss.str();
+	auto file_path = std::filesystem::path(vtks_dir_) / file_name;
 
 	writer_->SetFileName(file_path.string().c_str());
 	writer_->Write();
 
-	pvd_contents_ += R"(    <DataSet timestep=")" + std::to_string(iteration_) + R"(" group="" part="0" file=")"
-					 + std::filesystem::relative(file_path, output_dir_).string() + R"(" />
-)";
-
-	std::ofstream pvd_file(std::filesystem::path(output_dir_) / "microenvironment.pvd");
-
-	pvd_file << pvd_contents_ << R"(  </Collection>
-</VTKFile>)";
-
-	pvd_file.close();
+	append_to_pvd(file_name);
 
 	iteration_++;
 }

@@ -12,18 +12,12 @@
 #pragma GCC diagnostic pop
 
 #include "serializer.h"
+#include "vtk_serializer_base.h"
 
 namespace biofvm {
 
-class vtk_serializer : public serializer
+class vtk_serializer : public serializer, public vtk_serializer_base
 {
-	biofvm::index_t iteration_;
-
-	std::string output_dir_;
-	std::string vti_dir_;
-
-	std::string pvd_contents_;
-
 	vtkSmartPointer<vtkXMLImageDataWriter> writer_;
 	vtkSmartPointer<vtkImageData> image_data_;
 
