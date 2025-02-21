@@ -15,7 +15,7 @@ option(DOUBLE_PRECISION "Use double instead of float" OFF)
 if(MSVC)
   set(BIOFVM_CPP_COMPILE_OPTIONS /W4 /bigobj)
 else()
-  set(BIOFVM_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic)
+  set(BIOFVM_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic -march=native)
 endif()
 
 set(DEVICE_IMPL
@@ -69,6 +69,9 @@ find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
   target_link_libraries(BioFVMCore PUBLIC OpenMP::OpenMP_CXX)
 endif()
+
+find_package(LAPACK REQUIRED)
+target_link_libraries(BioFVMCore PUBLIC LAPACK::LAPACK)
 
 if(BUILD_FOR_DEVICE)
   if(DEVICE_IMPL STREQUAL "opencl")
